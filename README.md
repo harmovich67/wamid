@@ -22,12 +22,6 @@ npm run dev
 
 Open http://localhost:3000.
 
-| Account | Username | Password |
-| --- | --- | --- |
-| Teacher (super admin) | `admin` | `Wameed@2026` |
-| Students | `sara`, `omar`, `lina` | `spark123` |
-
-Passwords come from `SEED_ADMIN_PASSWORD` / `SEED_STUDENT_PASSWORD`. **Change them before going live.**
 
 `npm run db:seed` **wipes and re-seeds** the database. `npm run db:reset` also rebuilds the schema.
 
