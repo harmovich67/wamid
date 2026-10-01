@@ -21,14 +21,14 @@ export function CodeField({ code, language, title, onChange, ai = false, aiConte
               value={title ?? ""}
               onChange={(e) => onChange({ title: e.target.value })}
               placeholder="main.py"
-              className="h-7 w-28 rounded-md border border-white/10 bg-white/5 px-2 font-mono text-xs text-white/80 outline-none placeholder:text-white/25 focus:border-primary"
+              className="h-7 w-20 sm:w-28 rounded-md border border-white/10 bg-white/5 px-2 font-mono text-xs text-white/80 outline-none placeholder:text-white/25 focus:border-primary"
               aria-label="اسم الملف"
             />
           )}
           <select
             value={language}
             onChange={(e) => onChange({ language: e.target.value })}
-            className="h-7 rounded-md border border-white/10 bg-[#1c1838] px-1.5 font-mono text-xs text-white/80 outline-none focus:border-primary"
+            className="h-7 max-w-[90px] sm:max-w-none rounded-md border border-white/10 bg-[#1c1838] px-1.5 font-mono text-xs text-white/80 outline-none focus:border-primary"
             aria-label="لغة البرمجة"
           >
             {CODE_LANGUAGES.map((l) => (

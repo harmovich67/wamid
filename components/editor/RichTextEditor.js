@@ -177,18 +177,18 @@ export function RichTextEditor({ value, onChange, placeholder = "ابدأ الك
 
   return (
     <div className={cn("rounded-2xl border border-line bg-surface transition focus-within:border-primary/70 focus-within:ring-4 focus-within:ring-primary/10", className)}>
-      <div className="sticky top-15 z-20 flex items-center gap-0.5 rounded-t-2xl border-b border-line bg-surface/95 px-2 py-1.5 backdrop-blur">
-        {!source && editor && (
-          <>
+      <div className="sticky top-15 z-20 flex flex-col sm:flex-row sm:items-center gap-1.5 rounded-t-2xl border-b border-line bg-surface/95 px-2 py-1.5 backdrop-blur">
+        <div className="flex items-center justify-between sm:justify-start gap-1 w-full sm:w-auto">
+          {!source && editor && (
             <div className="relative shrink-0">
               <button
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => setTypeOpen((o) => !o)}
-                className="flex h-8 items-center gap-1.5 rounded-lg px-2 text-sm text-fg hover:bg-surface-2"
+                className="flex h-8 items-center gap-1.5 rounded-lg px-2 text-xs sm:text-sm text-fg hover:bg-surface-2"
               >
                 <current.icon className="size-4 text-primary" />
-                {current.label}
+                <span className="truncate max-w-[85px] sm:max-w-none">{current.label}</span>
                 <ChevronDown className="size-3.5 text-muted" />
               </button>
               {typeOpen && (
@@ -208,10 +208,25 @@ export function RichTextEditor({ value, onChange, placeholder = "ابدأ الك
                 </div>
               )}
             </div>
-            <span className="mx-1 h-5 w-px shrink-0 bg-line" />
-            {/* Horizontally scrollable on narrow screens instead of wrapping to several rows —
-                keeps the block-type picker and the AI/MD controls on either side always visible. */}
-            <div className="scrollbar-thin flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto">
+          )}
+
+          <div className="ms-auto sm:hidden flex shrink-0 items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setSource((s) => !s)}
+              title={source ? "العودة للمحرر المرئي" : "تحرير Markdown مباشرة"}
+              className={cn("flex h-8 items-center gap-1 rounded-lg px-2 font-mono text-[11px] transition", source ? "bg-primary-soft text-primary" : "text-muted hover:bg-surface-2 hover:text-fg")}
+            >
+              <FileCode2 className="size-3.5" /> MD
+            </button>
+            {ai && !source && editor && <AIAssist kind="markdown" compact context={aiContext} getTarget={getTarget} />}
+          </div>
+        </div>
+
+        {!source && editor && (
+          <>
+            <span className="hidden sm:block mx-1 h-5 w-px shrink-0 bg-line" />
+            <div className="scrollbar-thin flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto py-0.5">
               <ToolButton title="غامق (Ctrl+B)" active={state.bold} onClick={() => editor.chain().focus().toggleBold().run()}><Bold className="size-4" /></ToolButton>
               <ToolButton title="مائل (Ctrl+I)" active={state.italic} onClick={() => editor.chain().focus().toggleItalic().run()}><Italic className="size-4" /></ToolButton>
               <ToolButton title="يتوسطه خط" active={state.strike} onClick={() => editor.chain().focus().toggleStrike().run()}><Strikethrough className="size-4" /></ToolButton>
@@ -230,7 +245,8 @@ export function RichTextEditor({ value, onChange, placeholder = "ابدأ الك
             </div>
           </>
         )}
-        <div className="ms-auto flex shrink-0 items-center gap-1.5">
+
+        <div className="hidden sm:flex ms-auto shrink-0 items-center gap-1.5">
           <button
             type="button"
             onClick={() => setSource((s) => !s)}

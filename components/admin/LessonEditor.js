@@ -152,22 +152,22 @@ function QuizEditor({ quiz, setQuiz, title, blocks }) {
       <QuizGenerator title={title} blocks={blocks} onAdd={(qs) => setQuiz([...quiz, ...qs.map((q) => ({ ...q, explanation: q.explanation ?? "" }))])} />
       {quiz.length === 0 && <p className="rounded-2xl border border-dashed border-line p-6 text-center text-sm text-muted">لا أسئلة بعد. الاختبار اختياري لكنه يثبّت الفهم ويمنح نقاطًا إضافية للعلامة الكاملة.</p>}
       {quiz.map((q, i) => (
-        <div key={i} className="space-y-3 rounded-2xl border border-line bg-surface p-4">
+        <div key={i} className="space-y-3 rounded-2xl border border-line bg-surface p-3.5 sm:p-4">
           <div className="flex items-center gap-2">
-            <span className="grid size-7 place-items-center rounded-lg bg-sky-soft text-xs font-bold text-sky">{i + 1}</span>
+            <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-sky-soft text-xs font-bold text-sky">{i + 1}</span>
             <Input value={q.question} onChange={(e) => updateQ(i, { question: e.target.value })} placeholder="نص السؤال" />
-            <Button variant="ghost" size="icon-sm" onClick={() => setQuiz(quiz.filter((_, j) => j !== i))} aria-label="حذف السؤال"><Trash2 className="size-4 text-coral" /></Button>
+            <Button variant="ghost" size="icon-sm" className="shrink-0" onClick={() => setQuiz(quiz.filter((_, j) => j !== i))} aria-label="حذف السؤال"><Trash2 className="size-4 text-coral" /></Button>
           </div>
-          <div className="space-y-2 ps-9">
+          <div className="space-y-2 ps-2 sm:ps-9">
             {q.options.map((opt, oi) => (
               <div key={oi} className="flex items-center gap-2">
-                <input type="radio" name={`correct-${i}`} checked={q.correctIndex === oi} onChange={() => updateQ(i, { correctIndex: oi })} className="size-4 accent-[var(--mint)]" title="الإجابة الصحيحة" />
-                <Input className={cn("h-9", q.correctIndex === oi && "border-mint")} value={opt} onChange={(e) => updateQ(i, { options: q.options.map((o, k) => (k === oi ? e.target.value : o)) })} placeholder={`الخيار ${oi + 1}`} />
+                <input type="radio" name={`correct-${i}`} checked={q.correctIndex === oi} onChange={() => updateQ(i, { correctIndex: oi })} className="size-4 shrink-0 accent-[var(--mint)]" title="الإجابة الصحيحة" />
+                <Input className={cn("h-9 flex-1 min-w-0", q.correctIndex === oi && "border-mint")} value={opt} onChange={(e) => updateQ(i, { options: q.options.map((o, k) => (k === oi ? e.target.value : o)) })} placeholder={`الخيار ${oi + 1}`} />
                 <button
                   type="button"
                   disabled={q.options.length <= 2}
                   onClick={() => updateQ(i, { options: q.options.filter((_, k) => k !== oi), correctIndex: q.correctIndex >= oi && q.correctIndex > 0 ? q.correctIndex - 1 : q.correctIndex })}
-                  className="text-muted hover:text-coral disabled:opacity-30"
+                  className="shrink-0 text-muted hover:text-coral disabled:opacity-30 p-1"
                   aria-label="حذف الخيار"
                 >
                   <X className="size-4" />

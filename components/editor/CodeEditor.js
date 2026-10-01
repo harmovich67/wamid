@@ -118,7 +118,7 @@ export function CodeEditor({ value, onChange, language = "plaintext", filename, 
     <div className={cn("rounded-2xl border border-[#2b2649] bg-[#0f0d1f] text-[#e7e5ff] shadow-card", className)} dir="ltr">
       {/* Not overflow-hidden on the outer box: the AI menu inside `header` must be able to
           escape this container's rounded corners instead of being clipped by them. */}
-      <div className="relative z-10 flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-t-2xl border-b border-white/10 bg-white/[0.03] px-3 py-2">
+      <div className="relative z-30 flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-t-2xl border-b border-white/10 bg-white/[0.03] px-3 py-2">
         <div className="flex shrink-0 gap-1.5">
           <span className="size-2.5 rounded-full bg-coral/80" />
           <span className="size-2.5 rounded-full bg-amber/80" />
