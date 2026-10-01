@@ -95,7 +95,7 @@ export function AISettingsForm({ settings, keyInfo, defaultPrompt, usage }) {
           </Field>
 
           <Field label="تعليمات المساعد (System prompt)" hint="تحدد شخصية المساعد وأسلوبه. اتركها فارغة لاستخدام التعليمات الافتراضية.">
-            <Textarea rows={10} value={form.systemPrompt} onChange={(e) => setForm({ ...form, systemPrompt: e.target.value })} placeholder={defaultPrompt} />
+            <Textarea rows={10} value={form.systemPrompt ?? ""} onChange={(e) => setForm({ ...form, systemPrompt: e.target.value })} placeholder={defaultPrompt} />
             <button type="button" onClick={() => setForm({ ...form, systemPrompt: defaultPrompt })} className="mt-2 flex items-center gap-1 text-xs text-primary">
               <RotateCcw className="size-3" /> تحميل التعليمات الافتراضية للتعديل عليها
             </button>

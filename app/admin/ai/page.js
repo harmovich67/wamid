@@ -23,7 +23,7 @@ export default async function AdminAIPage() {
       FROM AIMessage m
       JOIN AIConversation c ON c.id = m.conversationId
       JOIN User u ON u.id = c.userId
-      WHERE m.role = 'user' AND m.createdAt >= ${weekAgo.getTime()}
+      WHERE m.role = 'user' AND m.createdAt >= ${weekAgo}
       GROUP BY u.id ORDER BY count DESC LIMIT 5`,
     prisma.user.findMany({
       where: { role: "STUDENT", isActive: true },
@@ -33,7 +33,7 @@ export default async function AdminAIPage() {
     prisma.$queryRaw`
       SELECT c.userId as userId, COUNT(m.id) as count
       FROM AIMessage m JOIN AIConversation c ON c.id = m.conversationId
-      WHERE m.role = 'user' AND m.createdAt >= ${weekAgo.getTime()}
+      WHERE m.role = 'user' AND m.createdAt >= ${weekAgo}
       GROUP BY c.userId`,
   ]);
   const weekly = new Map(perUser.map((r) => [r.userId, Number(r.count)]));
