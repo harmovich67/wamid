@@ -12,6 +12,7 @@ import { Icon } from "@/components/ui/Icon";
 import { Badge } from "@/components/ui/Badge";
 import { FadeIn } from "@/components/ui/Motion";
 import { TaskRow } from "@/components/student/TaskRow";
+import { StarterQuest } from "@/components/student/StarterQuest";
 import { LogoMark } from "@/components/brand/Logo";
 import { cn, dayKey, daysAgo, formatDate, formatNumber } from "@/lib/utils";
 
@@ -28,7 +29,7 @@ function greeting() {
 
 export default async function DashboardPage() {
   const user = await requireStudent();
-  const [tree, tasks, stats, lessonsDone, approved, badges, recent] = await Promise.all([
+  const [tree, tasks, stats, lessonsDone, approved, badges, recent, submissionsTotal, aiConversationsCount] = await Promise.all([
     getTree(user.id),
     getTasks(user.id),
     getShellStats(user),
@@ -43,6 +44,8 @@ export default async function DashboardPage() {
       where: { userId: user.id, completedAt: { gte: daysAgo(7) } },
       select: { completedAt: true },
     }),
+    prisma.submission.count({ where: { studentId: user.id } }),
+    prisma.aIConversation.count({ where: { userId: user.id } }),
   ]);
   const activeDays = new Set(recent.map((p) => dayKey(p.completedAt)));
   if (user.student?.lastActiveDate) activeDays.add(user.student.lastActiveDate);
@@ -136,6 +139,16 @@ export default async function DashboardPage() {
         <StatCard icon={ListChecks} label="مهام مقبولة" value={formatNumber(approved)} tone="mint" />
         <StatCard icon={Medal} label="أوسمة" value={formatNumber(badges.length)} tone="amber" />
         <StatCard icon={Flame} label="أفضل سلسلة" value={formatNumber(user.student?.bestStreak ?? 0)} hint="يوم متتالي" tone="coral" />
+      </FadeIn>
+
+      {/* Starter Quest */}
+      <FadeIn delay={0.08}>
+        <StarterQuest
+          lessonsDone={lessonsDone}
+          submissionsTotal={submissionsTotal}
+          aiConversationsCount={aiConversationsCount}
+          nextLesson={next?.nextLesson}
+        />
       </FadeIn>
 
       <div className="grid gap-6 lg:grid-cols-3">
