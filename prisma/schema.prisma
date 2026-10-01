@@ -1,0 +1,376 @@
+// Wameed — database schema
+// MySQL database schema for Prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Users & roles ────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  username     String   @unique
+  email        String?  @unique
+  passwordHash String
+  role         String   @default("STUDENT") // ADMIN | STUDENT
+  avatarColor  String   @default("#7C5CFF")
+  avatar       String?  @db.Text
+  isActive     Boolean  @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  student          StudentProfile?
+  teacher          TeacherProfile?
+  accessRules      AccessRule[]
+  progress         LessonProgress[]
+  submissions      Submission[]     @relation("SubmissionStudent")
+  reviews          Submission[]     @relation("SubmissionReviewer")
+  achievements     UserAchievement[]
+  notifications    Notification[]
+  aiConversations  AIConversation[]
+  uploads          Upload[]
+  announcements    Announcement[]          @relation("AnnouncementAuthor")
+  announcementsIn  AnnouncementRecipient[]
+  reactions        AnnouncementReaction[]
+  repliesWritten   AnnouncementReply[]     @relation("ReplyAuthor")
+  replyThreads     AnnouncementReply[]     @relation("ReplyThread")
+}
+
+model StudentProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  xp              Int      @default(0)
+  streakDays      Int      @default(0)
+  bestStreak      Int      @default(0)
+  lastActiveDate  String?  // YYYY-MM-DD
+  birthYear       Int?
+  guardianContact String?
+  notes           String?  @db.Text
+  aiEnabled       Boolean  @default(true)
+  createdAt       DateTime @default(now())
+}
+
+model TeacherProfile {
+  id     String  @id @default(cuid())
+  userId String  @unique
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title  String?
+  bio    String? @db.Text
+}
+
+// ─── Curriculum ───────────────────────────────────────────────────
+
+model Level {
+  id          String   @id @default(cuid())
+  order       Int      @default(0)
+  title       String
+  subtitle    String?
+  description String?  @db.Text
+  color       String   @default("#7C5CFF")
+  icon        String   @default("Sparkles")
+  createdAt   DateTime @default(now())
+  courses     Course[]
+}
+
+model Course {
+  id          String   @id @default(cuid())
+  levelId     String
+  level       Level    @relation(fields: [levelId], references: [id], onDelete: Cascade)
+  order       Int      @default(0)
+  title       String
+  description String?  @db.Text
+  icon        String   @default("BookOpen")
+  color       String   @default("#7C5CFF")
+  difficulty  String   @default("BEGINNER") // BEGINNER | INTERMEDIATE | ADVANCED
+  sequential  Boolean  @default(true)
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  modules     Module[]
+  tasks       Task[]
+
+  @@index([levelId])
+}
+
+model Module {
+  id        String   @id @default(cuid())
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  order     Int      @default(0)
+  title     String
+  lessons   Lesson[]
+
+  @@index([courseId])
+}
+
+model Lesson {
+  id          String   @id @default(cuid())
+  moduleId    String
+  module      Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  order       Int      @default(0)
+  title       String
+  summary     String?  @db.Text
+  blocks      String?  @db.LongText // JSON: [{ id, type: text|video|image|code|attachment|callout, ... }]
+  xpReward    Int      @default(10)
+  durationMin Int      @default(10)
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  quiz        QuizQuestion[]
+  progress    LessonProgress[]
+  tasks       Task[]
+
+  @@index([moduleId])
+}
+
+model QuizQuestion {
+  id           String  @id @default(cuid())
+  lessonId     String
+  lesson       Lesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  order        Int     @default(0)
+  question     String  @db.Text
+  options      String  @db.Text // JSON: string[]
+  correctIndex Int
+  explanation  String? @db.Text
+
+  @@index([lessonId])
+}
+
+// ─── Tasks & submissions ──────────────────────────────────────────
+
+model Task {
+  id          String    @id @default(cuid())
+  title       String
+  description String    @db.Text
+  type        String    @default("TASK")   // TASK | HOMEWORK | CHALLENGE | PROJECT
+  difficulty  String    @default("EASY")   // EASY | MEDIUM | HARD | EXPERT
+  skills      String?   @db.Text     // JSON: string[]
+  attachments String?   @db.Text     // JSON: [{ url, name, size }]
+  deadline    DateTime?
+  points      Int       @default(20)
+  courseId    String?
+  course      Course?   @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  lessonId    String?
+  lesson      Lesson?   @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  isPublished Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  submissions Submission[]
+}
+
+model Submission {
+  id            String    @id @default(cuid())
+  taskId        String
+  task          Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  studentId     String
+  student       User      @relation("SubmissionStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  content       String?   @db.Text
+  code          String?   @db.LongText
+  links         String?   @db.Text // JSON: string[]
+  files         String?   @db.Text // JSON: [{ url, name, size }]
+  status        String    @default("SUBMITTED") // SUBMITTED | NEEDS_REVISION | APPROVED
+  grade         Int?
+  feedback      String?   @db.Text
+  pointsAwarded Int       @default(0)
+  reviewerId    String?
+  reviewer      User?     @relation("SubmissionReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  submittedAt   DateTime  @default(now())
+  reviewedAt    DateTime?
+
+  @@unique([taskId, studentId])
+  @@index([status])
+}
+
+// ─── Progress & gamification ──────────────────────────────────────
+
+model LessonProgress {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId    String
+  lesson      Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  quizScore   Int?
+  quizTotal   Int?
+  xpEarned    Int       @default(0)
+
+  @@unique([userId, lessonId])
+}
+
+model Achievement {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  title       String
+  description String   @db.Text
+  icon        String   @default("Trophy")
+  color       String   @default("#FFB547")
+  criteria    String   @default("MANUAL") // LESSONS_COMPLETED | TASKS_APPROVED | XP_EARNED | STREAK_DAYS | COURSES_COMPLETED | QUIZ_PERFECT | MANUAL
+  threshold   Int      @default(1)
+  xpBonus     Int      @default(0)
+  createdAt   DateTime @default(now())
+  users       UserAchievement[]
+}
+
+model UserAchievement {
+  id            String      @id @default(cuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementId String
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  earnedAt      DateTime    @default(now())
+
+  @@unique([userId, achievementId])
+}
+
+// ─── Permissions ──────────────────────────────────────────────────
+
+model AccessRule {
+  id             String    @id @default(cuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resourceType   String    // LEVEL | COURSE | MODULE | LESSON | TASK
+  resourceId     String
+  effect         String    @default("ALLOW") // ALLOW | DENY
+  availableFrom  DateTime?
+  availableUntil DateTime?
+  notifiedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([userId, resourceType, resourceId])
+  @@index([userId])
+}
+
+// ─── Notifications ────────────────────────────────────────────────
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String    // LESSON_UNLOCKED | LESSON_UPDATED | TASK_ASSIGNED | FEEDBACK | ACHIEVEMENT | SYSTEM | ANNOUNCEMENT | REPLY | REACTION
+  title     String
+  body      String?   @db.Text
+  link      String?   @db.Text
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, readAt])
+}
+
+// ─── Announcements (teacher → students, with reactions and private replies) ───
+
+model Announcement {
+  id         String   @id @default(cuid())
+  authorId   String
+  author     User     @relation("AnnouncementAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  title      String
+  body       String?  @db.Text
+  link       String?  @db.Text
+  audience   String   @default("ALL") // ALL | SELECTED
+  createdAt  DateTime @default(now())
+  recipients AnnouncementRecipient[]
+  reactions  AnnouncementReaction[]
+  replies    AnnouncementReply[]
+}
+
+model AnnouncementRecipient {
+  id             String       @id @default(cuid())
+  announcementId String
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  readAt         DateTime?
+
+  @@unique([announcementId, userId])
+  @@index([userId])
+}
+
+model AnnouncementReaction {
+  id             String       @id @default(cuid())
+  announcementId String
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emoji          String
+  createdAt      DateTime     @default(now())
+
+  @@unique([announcementId, userId, emoji])
+}
+
+// Each student has a private thread with the teacher under an announcement (studentId = thread owner).
+model AnnouncementReply {
+  id             String       @id @default(cuid())
+  announcementId String
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  studentId      String
+  student        User         @relation("ReplyThread", fields: [studentId], references: [id], onDelete: Cascade)
+  authorId       String
+  author         User         @relation("ReplyAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  content        String       @db.Text
+  createdAt      DateTime     @default(now())
+
+  @@index([announcementId, studentId])
+}
+
+// ─── AI assistant ─────────────────────────────────────────────────
+
+model AISettings {
+  id                 Int      @id @default(1)
+  enabled            Boolean  @default(true)
+  model              String   @default("gemini-3.6-flash")
+  apiKey             String?  @db.Text
+  systemPrompt       String?  @db.Text
+  dailyLimit         Int      @default(30)
+  maxOutputTokens    Int      @default(1024)
+  temperature        Float    @default(0.6)
+  allowCodeReview    Boolean  @default(true)
+  allowFullSolutions Boolean  @default(false)
+  updatedAt          DateTime @updatedAt
+}
+
+model AIConversation {
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String      @default("محادثة جديدة")
+  context   String?     @db.Text // JSON: { lessonId?, taskId? }
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  messages  AIMessage[]
+
+  @@index([userId])
+}
+
+model AIMessage {
+  id             String         @id @default(cuid())
+  conversationId String
+  conversation   AIConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String         // user | model
+  content        String         @db.LongText
+  createdAt      DateTime       @default(now())
+
+  @@index([conversationId])
+}
+
+// ─── Files ────────────────────────────────────────────────────────
+
+model Upload {
+  id        String   @id @default(cuid())
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name      String
+  mime      String
+  size      Int
+  path      String
+  createdAt DateTime @default(now())
+}
