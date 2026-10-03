@@ -1,10 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
-import { Bot, ClipboardCheck, ExternalLink, LayoutDashboard, ListChecks, Map, Megaphone, Menu, Sparkles, Trophy, Users, X } from "lucide-react";
+import {
+  Bell,
+  Bot,
+  ClipboardCheck,
+  ExternalLink,
+  Layers,
+  LayoutDashboard,
+  ListChecks,
+  Map,
+  Megaphone,
+  Sparkles,
+  Trophy,
+  Users,
+  X,
+} from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { Avatar } from "@/components/ui/Avatar";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -12,7 +26,7 @@ import { UserMenu } from "./UserMenu";
 import { NotificationBell } from "./NotificationBell";
 import { cn } from "@/lib/utils";
 
-// Each item carries its own accent so the sidebar reads at a glance (the icon tile takes the color).
+// Desktop sidebar groups
 const GROUPS = [
   {
     label: null,
@@ -43,6 +57,23 @@ const GROUPS = [
 ];
 
 const ALL = GROUPS.flatMap((g) => g.items);
+
+// Mobile primary bottom bar items
+const MOBILE_MAIN_TABS = [
+  { href: "/admin", label: "الرئيسية", icon: LayoutDashboard, exact: true, color: "#7C5CFF" },
+  { href: "/admin/students", label: "الطلاب", icon: Users, color: "#38BDF8" },
+  { href: "/admin/submissions", label: "التسليمات", icon: ClipboardCheck, badge: "pending", color: "#FF6B81" },
+  { href: "/admin/curriculum", label: "المسار", icon: Map, match: ["/admin/curriculum", "/admin/courses", "/admin/lessons"], color: "#22C5A0" },
+];
+
+// Additional tools in mobile "More" sheet
+const MORE_ROUTES = [
+  { href: "/admin/tasks", label: "المهام والتحديات", desc: "واجبات وتحديات برمجية للمستويات", icon: ListChecks, color: "#FFB547" },
+  { href: "/admin/achievements", label: "الإنجازات والأوسمة", desc: "أوسمة ونقاط تميّز للطلاب", icon: Trophy, color: "#F472B6" },
+  { href: "/admin/ai", label: "المساعد الذكي (AI)", desc: "إعدادات وتخصيص نموذج Gemini", icon: Bot, color: "#A78BFA" },
+  { href: "/admin/notifications", label: "الإعلانات والبرودكاست", desc: "إرسال إعلانات لجميع الطلاب", icon: Megaphone, color: "#FB923C" },
+  { href: "/admin/inbox", label: "صندوق الإشعارات", desc: "جميع التنبيهات والإشعارات", icon: Bell, color: "#38BDF8", badge: "unread" },
+];
 
 function isActive(pathname, item) {
   if (item.exact) return pathname === item.href;
@@ -113,27 +144,21 @@ function Nav({ pathname, counts, onNavigate, layoutId }) {
   );
 }
 
-function SidebarContent({ pathname, counts, user, onNavigate, onClose, layoutId }) {
+function DesktopSidebarContent({ pathname, counts, user, layoutId }) {
   return (
     <>
       <div className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-[radial-gradient(ellipse_at_top,color-mix(in_oklab,var(--primary)_22%,transparent),transparent_70%)]" />
       <div className="relative flex items-center justify-between px-2">
-        <Link href="/admin" onClick={onNavigate}>
+        <Link href="/admin">
           <Logo size={36} />
         </Link>
-        {onClose ? (
-          <button onClick={onClose} className="grid size-9 place-items-center rounded-xl text-muted hover:bg-surface-2" aria-label="إغلاق">
-            <X className="size-5" />
-          </button>
-        ) : (
-          <span className="rounded-full border border-primary/30 bg-primary-soft px-2 py-0.5 text-[10px] font-semibold text-primary">لوحة المعلّم</span>
-        )}
+        <span className="rounded-full border border-primary/30 bg-primary-soft px-2 py-0.5 text-[10px] font-semibold text-primary">لوحة المعلّم</span>
       </div>
 
       <div className="scrollbar-thin relative -mx-1 mt-7 flex-1 overflow-y-auto px-1 pb-2">
-        <Nav pathname={pathname} counts={counts} onNavigate={onNavigate} layoutId={layoutId} />
+        <Nav pathname={pathname} counts={counts} layoutId={layoutId} />
 
-        <Link href="/admin/curriculum" onClick={onNavigate} className="group relative mt-6 block overflow-hidden rounded-2xl bg-[#15102e] p-4 text-white">
+        <Link href="/admin/curriculum" className="group relative mt-6 block overflow-hidden rounded-2xl bg-[#15102e] p-4 text-white">
           <div className="absolute -end-6 -top-10 size-28 rounded-full bg-primary/50 blur-2xl transition-transform duration-500 group-hover:scale-125" />
           <div className="absolute -bottom-12 start-0 size-24 rounded-full bg-amber/30 blur-2xl" />
           <div className="relative">
@@ -167,64 +192,290 @@ function SidebarContent({ pathname, counts, user, onNavigate, onClose, layoutId 
 
 export function AdminShell({ user, counts, children }) {
   const pathname = usePathname();
-  const [open, setOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const current = ALL.find((i) => isActive(pathname, i));
+  const isMoreActive = MORE_ROUTES.some((item) => isActive(pathname, item));
+
+  // Lock body scroll when mobile sheet is open to prevent double scroll
+  useEffect(() => {
+    if (!moreOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e) => e.key === "Escape" && setMoreOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [moreOpen]);
 
   return (
-    <div className="min-h-dvh">
+    <div className="min-h-dvh flex flex-col bg-bg">
+      {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 start-0 z-30 hidden w-64 flex-col overflow-hidden border-e border-line bg-surface px-3 py-5 lg:flex">
-        <SidebarContent pathname={pathname} counts={counts} user={user} layoutId="admin-nav" />
+        <DesktopSidebarContent pathname={pathname} counts={counts} user={user} layoutId="admin-nav" />
       </aside>
 
+      {/* Mobile "More" Bottom Sheet */}
       <AnimatePresence>
-        {open && (
-          <>
-            <motion.div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm lg:hidden" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setOpen(false)} />
-            <motion.aside
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="fixed inset-y-0 start-0 z-50 flex w-72 flex-col overflow-hidden bg-surface px-3 py-5 shadow-pop lg:hidden"
+        {moreOpen && (
+          <div className="fixed inset-0 z-50 lg:hidden" dir="rtl">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setMoreOpen(false)}
+              className="absolute inset-0 bg-[#0c0a18]/60 backdrop-blur-sm"
+            />
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-label="قائمة الخيارات الإضافية"
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 320 }}
+              className="absolute inset-x-0 bottom-0 flex max-h-[88dvh] flex-col rounded-t-[32px] border-t border-line bg-surface shadow-2xl"
             >
-              <SidebarContent pathname={pathname} counts={counts} user={user} onNavigate={() => setOpen(false)} onClose={() => setOpen(false)} layoutId="admin-nav-mobile" />
-            </motion.aside>
-          </>
+              {/* Drag indicator */}
+              <div className="mx-auto mt-3 h-1.5 w-12 shrink-0 rounded-full bg-line" />
+
+              {/* Sheet Header */}
+              <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
+                <div className="flex items-center gap-2.5">
+                  <Logo size={32} subtitle={false} />
+                  <span className="rounded-full border border-primary/30 bg-primary-soft px-2.5 py-0.5 text-xs font-semibold text-primary">
+                    لوحة المعلّم
+                  </span>
+                </div>
+                <button
+                  onClick={() => setMoreOpen(false)}
+                  className="grid size-9 place-items-center rounded-xl text-muted hover:bg-surface-2 hover:text-fg"
+                  aria-label="إغلاق"
+                >
+                  <X className="size-5" />
+                </button>
+              </div>
+
+              {/* Sheet Body with smooth mobile scroll */}
+              <div className="scrollbar-thin flex-1 overflow-y-auto overscroll-contain px-4 py-4 pb-[calc(2.5rem+env(safe-area-inset-bottom))] space-y-4">
+                {/* User card inside sheet */}
+                <div className="flex items-center gap-3 rounded-2xl border border-line bg-surface-2/60 p-3.5">
+                  <div className="relative">
+                    <Avatar name={user.name} color={user.avatarColor} avatar={user.avatar} size={42} />
+                    <span className="absolute -bottom-0.5 -end-0.5 size-3 rounded-full border-2 border-surface bg-mint" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-bold">{user.name}</div>
+                    <div className="text-xs text-muted">مدير المنصة · @{user.username}</div>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <ThemeToggle className="size-9 rounded-xl" />
+                    <Link
+                      href="/"
+                      onClick={() => setMoreOpen(false)}
+                      className="grid size-9 place-items-center rounded-xl border border-line bg-surface text-muted hover:bg-surface-2 hover:text-fg"
+                      title="عرض الموقع العام"
+                      aria-label="عرض الموقع العام"
+                    >
+                      <ExternalLink className="size-4" />
+                    </Link>
+                  </div>
+                </div>
+
+                {/* Additional sections list */}
+                <div>
+                  <div className="mb-2.5 px-1 text-xs font-bold text-muted">الأدوات والمحتوى الإضافي</div>
+                  <div className="space-y-2">
+                    {MORE_ROUTES.map((item) => {
+                      const active = isActive(pathname, item);
+                      const count = item.badge ? counts[item.badge] : 0;
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={() => setMoreOpen(false)}
+                          className={cn(
+                            "flex items-center gap-3 rounded-2xl border p-3.5 transition active:scale-[0.98]",
+                            active
+                              ? "border-primary/50 bg-primary-soft text-primary font-semibold shadow-xs"
+                              : "border-line bg-surface hover:bg-surface-2/70 text-fg"
+                          )}
+                        >
+                          <span
+                            className="grid size-10 shrink-0 place-items-center rounded-xl"
+                            style={{
+                              color: item.color,
+                              background: `color-mix(in oklab, ${item.color} 15%, transparent)`,
+                            }}
+                          >
+                            <item.icon className="size-5" />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm font-semibold">{item.label}</div>
+                            <div className="truncate text-xs text-muted">{item.desc}</div>
+                          </div>
+                          {count > 0 && (
+                            <span className="grid min-w-5 place-items-center rounded-full bg-coral px-1.5 text-xs font-bold text-white">
+                              {count}
+                            </span>
+                          )}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* AI Creator Banner */}
+                <Link
+                  href="/admin/curriculum"
+                  onClick={() => setMoreOpen(false)}
+                  className="group relative block overflow-hidden rounded-2xl bg-[#15102e] p-4 text-white shadow-card"
+                >
+                  <div className="absolute -end-6 -top-10 size-28 rounded-full bg-primary/50 blur-2xl transition-transform duration-500 group-hover:scale-125" />
+                  <div className="absolute -bottom-12 start-0 size-24 rounded-full bg-amber/30 blur-2xl" />
+                  <div className="relative flex items-center gap-3.5">
+                    <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-white/15">
+                      <Sparkles className="size-5 text-amber" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-bold">استوديو المحتوى الذكي</div>
+                      <p className="mt-0.5 text-xs text-white/70">
+                        اكتب موضوعًا ودع Gemini يبني الدرس والاختبار والمهام تلقائيًا.
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
-      <header className="sticky top-0 z-20 border-b border-line bg-bg/80 backdrop-blur-xl lg:ms-64">
-        <div className="flex h-15 items-center gap-3 px-4 sm:px-6">
-          <button onClick={() => setOpen(true)} className="grid size-10 place-items-center rounded-xl text-muted hover:bg-surface-2 lg:hidden" aria-label="القائمة">
-            <Menu className="size-5" />
-          </button>
-          <div className="flex min-w-0 items-center gap-2 text-sm">
-            <span className="hidden text-muted sm:inline">لوحة المعلّم</span>
+      {/* Top Header */}
+      <header className="sticky top-0 z-20 border-b border-line bg-bg/85 backdrop-blur-xl lg:ms-64">
+        <div className="flex h-15 items-center justify-between gap-3 px-4 sm:px-6">
+          {/* Mobile view brand + current active page */}
+          <div className="flex min-w-0 items-center gap-2.5 lg:hidden">
+            <Link href="/admin" className="shrink-0">
+              <Logo size={32} subtitle={false} />
+            </Link>
+            {current && (
+              <span className="flex min-w-0 items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-xs font-semibold shadow-xs">
+                <current.icon className="size-3.5 shrink-0" style={{ color: current.color }} />
+                <span className="truncate max-w-[130px]">{current.label}</span>
+              </span>
+            )}
+          </div>
+
+          {/* Desktop breadcrumb */}
+          <div className="hidden min-w-0 items-center gap-2 text-sm lg:flex">
+            <span className="text-muted">لوحة المعلّم</span>
             {current && (
               <>
-                <span className="hidden text-line sm:inline">/</span>
+                <span className="text-line">/</span>
                 <span className="flex items-center gap-1.5 truncate font-medium">
                   <current.icon className="size-4" style={{ color: current.color }} /> {current.label}
                 </span>
               </>
             )}
           </div>
-          <div className="ms-auto flex items-center gap-1.5">
+
+          {/* Actions & User menu */}
+          <div className="ms-auto flex items-center gap-1.5 sm:gap-2">
             {counts.pending > 0 && (
-              <Link href="/admin/submissions" className="hidden items-center gap-1.5 rounded-full bg-coral-soft px-3 py-1.5 text-xs font-medium text-coral sm:flex">
-                <ClipboardCheck className="size-3.5" /> {counts.pending} للمراجعة
+              <Link
+                href="/admin/submissions"
+                className="flex items-center gap-1 rounded-full bg-coral-soft px-2.5 py-1 text-xs font-semibold text-coral transition hover:bg-coral hover:text-white"
+              >
+                <ClipboardCheck className="size-3.5" />
+                <span className="hidden sm:inline">{counts.pending} للمراجعة</span>
+                <span className="sm:hidden font-bold">{counts.pending}</span>
               </Link>
             )}
             <NotificationBell initialUnread={counts.unread} allHref="/admin/inbox" />
-            <ThemeToggle />
+            <ThemeToggle className="hidden sm:grid" />
             <UserMenu user={user} subtitle="معلّم · مدير المنصة" />
           </div>
         </div>
       </header>
 
-      <main className="lg:ms-64">
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">{children}</div>
+      {/* Main page content with generous mobile bottom padding for uninhibited scroll */}
+      <main className="min-w-0 flex-1 pb-28 lg:ms-64 lg:pb-12">
+        <div className="mx-auto max-w-7xl min-w-0 px-4 py-5 sm:px-6 sm:py-8">{children}</div>
       </main>
+
+      {/* Mobile App Bottom Navigation Bar */}
+      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden shadow-[0_-4px_24px_rgba(0,0,0,0.06)]">
+        <div className="mx-auto flex max-w-lg items-stretch justify-around px-2 py-1">
+          {MOBILE_MAIN_TABS.map((item) => {
+            const active = isActive(pathname, item);
+            const count = item.badge ? counts[item.badge] : 0;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="relative flex flex-1 flex-col items-center gap-1 py-1.5 text-[11px] font-medium transition-transform active:scale-95"
+              >
+                {active && (
+                  <motion.span
+                    layoutId="admin-mobile-tab"
+                    className="absolute top-0 h-1 w-10 rounded-b-full bg-primary"
+                    transition={{ type: "spring", damping: 30, stiffness: 400 }}
+                  />
+                )}
+                <span
+                  className={cn(
+                    "relative grid size-9 place-items-center rounded-2xl transition-colors",
+                    active ? "bg-primary-soft text-primary font-bold" : "text-muted hover:text-fg"
+                  )}
+                >
+                  <item.icon className="size-5" style={active ? { color: item.color } : undefined} />
+                  {count > 0 && (
+                    <span className="absolute -end-1 -top-1 grid min-w-4 place-items-center rounded-full bg-coral px-1 text-[10px] font-bold leading-4 text-white shadow-sm">
+                      {count}
+                    </span>
+                  )}
+                </span>
+                <span className={cn("text-[11px] leading-tight font-medium", active ? "font-bold text-primary" : "text-muted")}>
+                  {item.label}
+                </span>
+              </Link>
+            );
+          })}
+
+          {/* 5th Tab: "المزيد" opens bottom sheet */}
+          <button
+            type="button"
+            onClick={() => setMoreOpen(true)}
+            className="relative flex flex-1 flex-col items-center gap-1 py-1.5 text-[11px] font-medium transition-transform active:scale-95"
+            aria-label="المزيد من الأدوات"
+          >
+            {isMoreActive && (
+              <motion.span
+                layoutId="admin-mobile-tab"
+                className="absolute top-0 h-1 w-10 rounded-b-full bg-primary"
+                transition={{ type: "spring", damping: 30, stiffness: 400 }}
+              />
+            )}
+            <span
+              className={cn(
+                "relative grid size-9 place-items-center rounded-2xl transition-colors",
+                isMoreActive || moreOpen ? "bg-primary-soft text-primary font-bold" : "text-muted hover:text-fg"
+              )}
+            >
+              <Layers className="size-5" />
+              {counts.unread > 0 && (
+                <span className="absolute -end-0.5 -top-0.5 size-2.5 rounded-full bg-coral ring-2 ring-surface" />
+              )}
+            </span>
+            <span className={cn("text-[11px] leading-tight font-medium", isMoreActive || moreOpen ? "font-bold text-primary" : "text-muted")}>
+              المزيد
+            </span>
+          </button>
+        </div>
+      </nav>
     </div>
   );
 }
+

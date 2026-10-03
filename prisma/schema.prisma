@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -20,7 +20,7 @@ model User {
   passwordHash String
   role         String   @default("STUDENT") // ADMIN | STUDENT
   avatarColor  String   @default("#7C5CFF")
-  avatar       String?  @db.Text
+  avatar       String?
   isActive     Boolean  @default(true)
   lastLoginAt  DateTime?
   createdAt    DateTime @default(now())
@@ -53,7 +53,7 @@ model StudentProfile {
   lastActiveDate  String?  // YYYY-MM-DD
   birthYear       Int?
   guardianContact String?
-  notes           String?  @db.Text
+  notes           String?
   aiEnabled       Boolean  @default(true)
   createdAt       DateTime @default(now())
 }
@@ -63,7 +63,7 @@ model TeacherProfile {
   userId String  @unique
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   title  String?
-  bio    String? @db.Text
+  bio    String?
 }
 
 // ─── Curriculum ───────────────────────────────────────────────────
@@ -73,7 +73,7 @@ model Level {
   order       Int      @default(0)
   title       String
   subtitle    String?
-  description String?  @db.Text
+  description String?
   color       String   @default("#7C5CFF")
   icon        String   @default("Sparkles")
   createdAt   DateTime @default(now())
@@ -86,7 +86,7 @@ model Course {
   level       Level    @relation(fields: [levelId], references: [id], onDelete: Cascade)
   order       Int      @default(0)
   title       String
-  description String?  @db.Text
+  description String?
   icon        String   @default("BookOpen")
   color       String   @default("#7C5CFF")
   difficulty  String   @default("BEGINNER") // BEGINNER | INTERMEDIATE | ADVANCED
@@ -117,8 +117,8 @@ model Lesson {
   module      Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   order       Int      @default(0)
   title       String
-  summary     String?  @db.Text
-  blocks      String?  @db.LongText // JSON: [{ id, type: text|video|image|code|attachment|callout, ... }]
+  summary     String?
+  blocks      String? // JSON: [{ id, type: text|video|image|code|attachment|callout, ... }]
   xpReward    Int      @default(10)
   durationMin Int      @default(10)
   isPublished Boolean  @default(true)
@@ -137,10 +137,10 @@ model QuizQuestion {
   lessonId     String
   lesson       Lesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
   order        Int     @default(0)
-  question     String  @db.Text
-  options      String  @db.Text // JSON: string[]
+  question     String
+  options      String // JSON: string[]
   correctIndex Int
-  explanation  String? @db.Text
+  explanation  String?
 
   @@index([lessonId])
 }
@@ -150,11 +150,11 @@ model QuizQuestion {
 model Task {
   id          String    @id @default(cuid())
   title       String
-  description String    @db.Text
+  description String
   type        String    @default("TASK")   // TASK | HOMEWORK | CHALLENGE | PROJECT
   difficulty  String    @default("EASY")   // EASY | MEDIUM | HARD | EXPERT
-  skills      String?   @db.Text     // JSON: string[]
-  attachments String?   @db.Text     // JSON: [{ url, name, size }]
+  skills      String?     // JSON: string[]
+  attachments String?     // JSON: [{ url, name, size }]
   deadline    DateTime?
   points      Int       @default(20)
   courseId    String?
@@ -173,13 +173,13 @@ model Submission {
   task          Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
   studentId     String
   student       User      @relation("SubmissionStudent", fields: [studentId], references: [id], onDelete: Cascade)
-  content       String?   @db.Text
-  code          String?   @db.LongText
-  links         String?   @db.Text // JSON: string[]
-  files         String?   @db.Text // JSON: [{ url, name, size }]
+  content       String?
+  code          String?
+  links         String? // JSON: string[]
+  files         String? // JSON: [{ url, name, size }]
   status        String    @default("SUBMITTED") // SUBMITTED | NEEDS_REVISION | APPROVED
   grade         Int?
-  feedback      String?   @db.Text
+  feedback      String?
   pointsAwarded Int       @default(0)
   reviewerId    String?
   reviewer      User?     @relation("SubmissionReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
@@ -211,7 +211,7 @@ model Achievement {
   id          String   @id @default(cuid())
   key         String   @unique
   title       String
-  description String   @db.Text
+  description String
   icon        String   @default("Trophy")
   color       String   @default("#FFB547")
   criteria    String   @default("MANUAL") // LESSONS_COMPLETED | TASKS_APPROVED | XP_EARNED | STREAK_DAYS | COURSES_COMPLETED | QUIZ_PERFECT | MANUAL
@@ -259,8 +259,8 @@ model Notification {
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   type      String    // LESSON_UNLOCKED | LESSON_UPDATED | TASK_ASSIGNED | FEEDBACK | ACHIEVEMENT | SYSTEM | ANNOUNCEMENT | REPLY | REACTION
   title     String
-  body      String?   @db.Text
-  link      String?   @db.Text
+  body      String?
+  link      String?
   readAt    DateTime?
   createdAt DateTime  @default(now())
 
@@ -274,8 +274,8 @@ model Announcement {
   authorId   String
   author     User     @relation("AnnouncementAuthor", fields: [authorId], references: [id], onDelete: Cascade)
   title      String
-  body       String?  @db.Text
-  link       String?  @db.Text
+  body       String?
+  link       String?
   audience   String   @default("ALL") // ALL | SELECTED
   createdAt  DateTime @default(now())
   recipients AnnouncementRecipient[]
@@ -316,7 +316,7 @@ model AnnouncementReply {
   student        User         @relation("ReplyThread", fields: [studentId], references: [id], onDelete: Cascade)
   authorId       String
   author         User         @relation("ReplyAuthor", fields: [authorId], references: [id], onDelete: Cascade)
-  content        String       @db.Text
+  content        String
   createdAt      DateTime     @default(now())
 
   @@index([announcementId, studentId])
@@ -328,8 +328,8 @@ model AISettings {
   id                 Int      @id @default(1)
   enabled            Boolean  @default(true)
   model              String   @default("gemini-3.6-flash")
-  apiKey             String?  @db.Text
-  systemPrompt       String?  @db.Text
+  apiKey             String?
+  systemPrompt       String?
   dailyLimit         Int      @default(30)
   maxOutputTokens    Int      @default(1024)
   temperature        Float    @default(0.6)
@@ -343,7 +343,7 @@ model AIConversation {
   userId    String
   user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   title     String      @default("محادثة جديدة")
-  context   String?     @db.Text // JSON: { lessonId?, taskId? }
+  context   String? // JSON: { lessonId?, taskId? }
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
   messages  AIMessage[]
@@ -356,7 +356,7 @@ model AIMessage {
   conversationId String
   conversation   AIConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   role           String         // user | model
-  content        String         @db.LongText
+  content        String
   createdAt      DateTime       @default(now())
 
   @@index([conversationId])

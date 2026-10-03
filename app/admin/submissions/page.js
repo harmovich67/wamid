@@ -39,7 +39,7 @@ export default async function SubmissionsPage({ searchParams }) {
   return (
     <div>
       <PageHeader title="التسليمات" subtitle="راجع حلول الطلاب، امنحهم الدرجات والملاحظات." />
-      <div className="scrollbar-thin mb-5 flex gap-1 overflow-x-auto rounded-2xl bg-surface-2 p-1">
+      <div className="no-scrollbar sm:scrollbar-thin mb-5 flex gap-1 overflow-x-auto rounded-2xl bg-surface-2 p-1">
         {FILTERS.map((f) => (
           <Link
             key={f.value}

@@ -42,8 +42,8 @@ export function BroadcastForm({ students, recent }) {
         title="الإعلانات"
         subtitle="أرسل إعلانًا لكل الطلاب أو لطلاب محددين. يصلهم فورًا في جرس الإشعارات مع صوت تنبيه، ويمكنهم التفاعل بالإيموجي والرد عليك."
       />
-      <div className="grid gap-6 lg:grid-cols-[1fr_400px]">
-        <form onSubmit={send} className="space-y-4 self-start rounded-3xl border border-line bg-surface p-5 shadow-card sm:p-6">
+      <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_380px]">
+        <form onSubmit={send} className="min-w-0 space-y-4 self-start rounded-3xl border border-line bg-surface p-4 shadow-card sm:p-6">
           <div className="grid grid-cols-2 gap-2">
             {[
               ["all", "كل الطلاب"],
@@ -79,7 +79,7 @@ export function BroadcastForm({ students, recent }) {
           <Field label="العنوان" required>
             <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required maxLength={160} placeholder="🎉 تحدي نهاية الأسبوع بدأ!" />
           </Field>
-          <Field as="div" label="نص الإعلان">
+          <Field as="div" label="نص الإعلان" className="min-w-0">
             <RichTextEditor key={formKey} ai minHeight={140} value={form.body} onChange={(body) => setForm((f) => ({ ...f, body }))} placeholder="اكتب تفاصيل الإعلان…" />
           </Field>
           <Field label="رابط داخلي (اختياري)" hint="زر يظهر في الإعلان — مثل /tasks أو /roadmap">
@@ -90,13 +90,13 @@ export function BroadcastForm({ students, recent }) {
           </Button>
         </form>
 
-        <div className="space-y-3 self-start">
+        <div className="min-w-0 space-y-3 self-start">
           <h3 className="flex items-center gap-2 font-semibold">
-            <Megaphone className="size-5 text-coral" /> الإعلانات المرسلة
+            <Megaphone className="size-5 shrink-0 text-coral" /> الإعلانات المرسلة
           </h3>
           {recent.length === 0 && <p className="rounded-3xl border border-dashed border-line p-6 text-center text-sm text-muted">لم ترسل إعلانات بعد.</p>}
           {recent.map((a) => (
-            <Link key={a.id} href={`/admin/notifications/${a.id}`} className="group block rounded-3xl border border-line bg-surface p-4 shadow-card transition hover:-translate-y-0.5 hover:border-primary/40">
+            <Link key={a.id} href={`/admin/notifications/${a.id}`} className="group block min-w-0 rounded-3xl border border-line bg-surface p-4 shadow-card transition hover:-translate-y-0.5 hover:border-primary/40">
               <div className="flex items-start gap-2">
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-semibold group-hover:text-primary">{a.title}</div>
@@ -104,11 +104,11 @@ export function BroadcastForm({ students, recent }) {
                     {timeAgo(a.at)} · {a.audience === "ALL" ? "كل الطلاب" : "طلاب محددون"}
                   </div>
                 </div>
-                <ArrowLeft className="mt-1 size-4 text-muted transition group-hover:-translate-x-1" />
+                <ArrowLeft className="mt-1 size-4 shrink-0 text-muted transition group-hover:-translate-x-1" />
               </div>
               <div className="mt-3 flex items-center gap-2 text-xs text-muted">
-                <Eye className="size-3.5" /> قرأه {formatNumber(a.read)} من {formatNumber(a.count)}
-                <ProgressBar value={percent(a.read, a.count)} size="sm" className="flex-1" />
+                <Eye className="size-3.5 shrink-0" /> قرأه {formatNumber(a.read)} من {formatNumber(a.count)}
+                <ProgressBar value={percent(a.read, a.count)} size="sm" className="min-w-0 flex-1" />
               </div>
               <div className="mt-3 flex flex-wrap items-center gap-1.5">
                 {a.reactions.map((r) => (

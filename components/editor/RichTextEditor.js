@@ -176,9 +176,9 @@ export function RichTextEditor({ value, onChange, placeholder = "ابدأ الك
   const current = BLOCK_TYPES.find((b) => b.id === state.block) ?? BLOCK_TYPES[0];
 
   return (
-    <div className={cn("rounded-2xl border border-line bg-surface transition focus-within:border-primary/70 focus-within:ring-4 focus-within:ring-primary/10", className)}>
-      <div className="sticky top-15 z-20 flex flex-col sm:flex-row sm:items-center gap-1.5 rounded-t-2xl border-b border-line bg-surface/95 px-2 py-1.5 backdrop-blur">
-        <div className="flex items-center justify-between sm:justify-start gap-1 w-full sm:w-auto">
+    <div className={cn("min-w-0 rounded-2xl border border-line bg-surface transition focus-within:border-primary/70 focus-within:ring-4 focus-within:ring-primary/10", className)}>
+      <div className="sticky top-15 z-20 flex min-w-0 flex-col sm:flex-row sm:items-center gap-1.5 rounded-t-2xl border-b border-line bg-surface/95 px-2 py-1.5 backdrop-blur">
+        <div className="flex items-center justify-between sm:justify-start gap-1 w-full sm:w-auto shrink-0">
           {!source && editor && (
             <div className="relative shrink-0">
               <button

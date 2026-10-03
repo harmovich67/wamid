@@ -275,34 +275,36 @@ export function StudentsManager({ students, levels, tasks, openNew }) {
           </div>
           <div className="divide-y divide-line">
             {filtered.map((s) => (
-              <div key={s.id} className="grid grid-cols-[32px_1fr] items-center gap-3 px-4 py-3 transition hover:bg-surface-2/40 md:grid-cols-[40px_1.6fr_1fr_1fr_1fr_1fr]">
-                <input
-                  type="checkbox"
-                  checked={selected.includes(s.id)}
-                  onChange={(e) => setSelected(e.target.checked ? [...selected, s.id] : selected.filter((x) => x !== s.id))}
-                  className="size-4 accent-[var(--primary)]"
-                  aria-label={`تحديد ${s.name}`}
-                />
-                <Link href={`/admin/students/${s.id}`} className="flex min-w-0 items-center gap-3">
-                  <Avatar name={s.name} color={s.avatarColor} avatar={s.avatar} size={40} />
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 truncate font-medium">
-                      {s.name}
-                      {!s.isActive && <Badge tone="coral">موقوف</Badge>}
+              <div key={s.id} className="p-3.5 transition hover:bg-surface-2/40 md:grid md:grid-cols-[40px_1.6fr_1fr_1fr_1fr_1fr] md:items-center md:gap-3 md:px-4 md:py-3">
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={selected.includes(s.id)}
+                    onChange={(e) => setSelected(e.target.checked ? [...selected, s.id] : selected.filter((x) => x !== s.id))}
+                    className="size-4 shrink-0 accent-[var(--primary)]"
+                    aria-label={`تحديد ${s.name}`}
+                  />
+                  <Link href={`/admin/students/${s.id}`} className="flex min-w-0 flex-1 items-center gap-3">
+                    <Avatar name={s.name} color={s.avatarColor} avatar={s.avatar} size={38} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 truncate font-medium">
+                        {s.name}
+                        {!s.isActive && <Badge tone="coral">موقوف</Badge>}
+                      </div>
+                      <div className="truncate text-xs text-muted" dir="ltr">@{s.username}</div>
                     </div>
-                    <div className="truncate text-xs text-muted" dir="ltr">@{s.username}</div>
-                  </div>
-                </Link>
-                <div className="col-start-2 flex flex-wrap items-center gap-2 text-sm md:col-start-auto">
-                  <Badge tone="primary">{s.rank}</Badge>
-                  <span className="flex items-center gap-0.5 text-muted"><Zap className="size-3.5" />{formatNumber(s.xp)}</span>
-                  {s.streak > 0 && <span className="flex items-center gap-0.5 text-amber"><Flame className="size-3.5" />{formatNumber(s.streak)}</span>}
+                  </Link>
                 </div>
-                <div className="col-start-2 text-sm text-muted md:col-start-auto">{formatNumber(s.lessonsDone)} درس مكتمل</div>
-                <div className="col-start-2 text-sm md:col-start-auto">
+                <div className="mt-2.5 flex flex-wrap items-center gap-2 ps-7 text-sm md:mt-0 md:ps-0">
+                  <Badge tone="primary">{s.rank}</Badge>
+                  <span className="flex items-center gap-0.5 text-xs font-medium text-muted"><Zap className="size-3.5 fill-current text-primary" />{formatNumber(s.xp)}</span>
+                  {s.streak > 0 && <span className="flex items-center gap-0.5 text-xs font-medium text-amber"><Flame className="size-3.5 fill-current" />{formatNumber(s.streak)}</span>}
+                </div>
+                <div className="mt-1 ps-7 text-xs text-muted md:mt-0 md:ps-0 md:text-sm">{formatNumber(s.lessonsDone)} درس مكتمل</div>
+                <div className="mt-1 ps-7 text-xs md:mt-0 md:ps-0 md:text-sm">
                   {s.rules ? <span className="flex items-center gap-1 text-muted"><KeyRound className="size-3.5" /> {formatNumber(s.rules)} قاعدة</span> : <Badge tone="amber">لا محتوى مفتوح</Badge>}
                 </div>
-                <div className="col-start-2 text-xs text-muted md:col-start-auto">{s.lastLoginAt ? timeAgo(s.lastLoginAt) : "لم يدخل بعد"}</div>
+                <div className="mt-1 ps-7 text-[11px] text-muted md:mt-0 md:ps-0 md:text-xs">{s.lastLoginAt ? timeAgo(s.lastLoginAt) : "لم يدخل بعد"}</div>
               </div>
             ))}
             {filtered.length === 0 && <p className="p-6 text-center text-sm text-muted">لا نتائج مطابقة.</p>}

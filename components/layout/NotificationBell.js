@@ -120,7 +120,7 @@ export function NotificationBell({ initialUnread = 0, allHref }) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.97 }}
             transition={{ duration: 0.15 }}
-            className="absolute end-0 top-12 z-40 w-[min(380px,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-line bg-surface shadow-pop max-sm:-end-24"
+            className="absolute end-0 top-12 z-40 w-[min(380px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-line bg-surface shadow-pop max-sm:fixed max-sm:inset-x-3 max-sm:top-16 max-sm:w-auto"
           >
             <div className="flex items-center gap-2 border-b border-line px-4 py-3">
               <span className="font-semibold">الإشعارات</span>
