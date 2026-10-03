@@ -95,6 +95,7 @@
 /* ─── Base ────────────────────────────────────────────────────── */
 html {
   -webkit-tap-highlight-color: transparent;
+  scroll-behavior: smooth;
 }
 
 body {
@@ -102,6 +103,7 @@ body {
   color: var(--fg);
   font-family: var(--font-sans);
   font-feature-settings: "ss01";
+  -webkit-overflow-scrolling: touch;
 }
 
 ::selection {
@@ -117,6 +119,14 @@ body {
 .scrollbar-thin {
   scrollbar-width: thin;
   scrollbar-color: var(--line) transparent;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 .bg-grid {

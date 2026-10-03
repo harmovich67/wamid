@@ -18,8 +18,8 @@ export function ActivityChart({ data, height = 180 }) {
   const nice = Math.max(4, Math.ceil(max / 4) * 4);
 
   return (
-    <div className="relative">
-      <div className="relative flex items-end gap-0.5" style={{ height }} role="img" aria-label="عدد الدروس المكتملة يوميًا خلال آخر 14 يومًا">
+    <div className="relative touch-pan-y">
+      <div className="relative flex items-end gap-0.5 touch-pan-y" style={{ height }} role="img" aria-label="عدد الدروس المكتملة يوميًا خلال آخر 14 يومًا">
         {[0.5, 1].map((f) => (
           <div key={f} className="pointer-events-none absolute inset-x-0 border-t border-line" style={{ bottom: `${f * 100}%` }}>
             <span className="absolute -top-2.5 end-full me-2 text-[10px] text-muted">{formatNumber(Math.round(nice * f))}</span>
@@ -31,7 +31,7 @@ export function ActivityChart({ data, height = 180 }) {
           return (
             <div
               key={d.date}
-              className="relative flex h-full flex-1 cursor-default items-end justify-center"
+              className="relative flex h-full flex-1 cursor-default items-end justify-center touch-pan-y"
               onMouseEnter={() => setHover(i)}
               onMouseLeave={() => setHover(null)}
             >

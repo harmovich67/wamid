@@ -158,8 +158,8 @@ export function AIAssist({
           "AI"
         ) : (
           <>
-            <span className="hidden sm:inline">حسّن بالذكاء</span>
-            <span className="sm:hidden">AI</span>
+            <span className="hidden xl:inline">حسّن بالذكاء</span>
+            <span className="xl:hidden">AI</span>
           </>
         )}
         {!busy && <ChevronDown className="size-3" />}
