@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { buildStudentTree } from "@/lib/access";
+import { buildStudentTree, loadGroupRules } from "@/lib/access";
+import { ensureReportToken, reportPath, requestOrigin } from "@/lib/reports";
 import { getCurriculum, getTaskOptions, serializeRules } from "@/lib/admin-data";
 import { studentStats } from "@/lib/rewards";
 import { rankFor, liveStreak } from "@/lib/gamification";
@@ -17,7 +18,7 @@ export default async function StudentPage({ params }) {
   const { id } = await params;
   await requireAdmin();
 
-  const [student, tree, stats, levels, tasks, submissions, achievements, owned] = await Promise.all([
+  const [student, tree, stats, levels, tasks, submissions, achievements, owned, groupRules, memberships, token, origin] = await Promise.all([
     prisma.user.findFirst({
       where: { id, role: "STUDENT" },
       include: { student: true, accessRules: true },
@@ -33,6 +34,10 @@ export default async function StudentPage({ params }) {
     }),
     prisma.achievement.findMany({ orderBy: { createdAt: "asc" } }),
     prisma.userAchievement.findMany({ where: { userId: id } }),
+    loadGroupRules(id),
+    prisma.studyGroupMember.findMany({ where: { userId: id }, select: { group: { select: { id: true, name: true, color: true } } } }),
+    ensureReportToken(id),
+    requestOrigin(),
   ]);
   if (!student) notFound();
 
@@ -56,7 +61,11 @@ export default async function StudentPage({ params }) {
     guardianContact: student.student?.guardianContact ?? "",
     notes: student.student?.notes ?? "",
     aiEnabled: student.student?.aiEnabled ?? true,
+    codeEnabled: student.student?.codeEnabled ?? true,
     chatEnabled: student.student?.chatEnabled ?? false,
+    groups: memberships.map((m) => m.group),
+    reportUrl: token ? `${origin}${reportPath(token)}` : null,
+    lastReportSentAt: student.student?.lastReportSentAt?.toISOString() ?? null,
     streak: liveStreak(student.student),
     rank: rankFor(stats.xp).current.title,
   };
@@ -69,6 +78,7 @@ export default async function StudentPage({ params }) {
       levels={levels}
       tasks={tasks}
       rules={serializeRules(student.accessRules)}
+      groupRules={groupRules.map((r) => ({ ...serializeRules([r])[0], group: r.group }))}
       submissions={submissions.map((s) => ({
         id: s.id,
         status: s.status,

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { after } from "next/server";
 import { ArrowRight, Bot, Clock, Lock, Zap } from "lucide-react";
 import { requireStudent } from "@/lib/auth";
 import { prisma } from "@/lib/db";
@@ -45,6 +46,15 @@ export default async function LessonPage({ params }) {
     );
   }
 
+  // Remember that the student opened the lesson ("started but not finished" analytics).
+  if (!node.progress) {
+    after(() =>
+      prisma.lessonProgress
+        .upsert({ where: { userId_lessonId: { userId: user.id, lessonId: id } }, update: {}, create: { userId: user.id, lessonId: id } })
+        .catch(() => {})
+    );
+  }
+
   const lesson = await prisma.lesson.findUnique({
     where: { id },
     include: { quiz: { orderBy: { order: "asc" } } },
@@ -85,7 +95,7 @@ export default async function LessonPage({ params }) {
         </header>
 
         <div className="rounded-[2rem] border border-line bg-surface p-5 shadow-card sm:p-8">
-          {blocks.length ? <BlockRenderer blocks={blocks} /> : <p className="text-muted">محتوى هذا الدرس قيد الإعداد.</p>}
+          {blocks.length ? <BlockRenderer blocks={blocks} runnable={stats.codeEnabled} /> : <p className="text-muted">محتوى هذا الدرس قيد الإعداد.</p>}
         </div>
 
         {questions.length > 0 && <LessonQuiz lessonId={id} questions={questions} previous={progress} />}

@@ -31,6 +31,24 @@ export const POST = handler({ role: "STUDENT" }, async ({ req, user, params }) =
     update: { quizScore: best, quizTotal: total },
     create: { userId: user.id, lessonId: params.id, quizScore: score, quizTotal: total },
   });
+  // Per-question history: the first answer is kept (it shows what the class really understood).
+  await prisma.$transaction(
+    questions.map((q, i) =>
+      prisma.quizAnswer.upsert({
+        where: { userId_questionId: { userId: user.id, questionId: q.id } },
+        update: { lastAnswer: answers[i], lastCorrect: results[i].correct, attempts: { increment: 1 } },
+        create: {
+          userId: user.id,
+          questionId: q.id,
+          lessonId: params.id,
+          firstAnswer: answers[i],
+          firstCorrect: results[i].correct,
+          lastAnswer: answers[i],
+          lastCorrect: results[i].correct,
+        },
+      })
+    )
+  );
   await recordActivity(user.id);
 
   return { score, total, results };

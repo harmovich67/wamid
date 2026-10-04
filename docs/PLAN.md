@@ -168,4 +168,5 @@ loads the app, any rule whose `availableFrom` has passed and hasn't been announc
 | 8 | Seed curriculum (Arabic), polish, build verification | ✅ |
 | 9 | Scroll-animated landing page (GSAP: robot story, input→process→output, typing code, horizontal journey), professional admin overview (KPIs + weekly trend, activity chart, attention list), per-student AI access panel | ✅ |
 | 10 | Teacher-controlled private chat (images/files, read receipts, per-student open/close), browser notifications (Web Push + in-tab fallback), faster navigation (nav prefetch, client cache, top progress bar) | ✅ |
+| 11 | Classes (study groups) with inherited access + class announcements, parent report pages (WhatsApp / weekly email via cron), in-browser code runner (Pyodide Python, JS, HTML) in lessons + playground, teacher analytics (drop-off, hardest questions, inactive students, CSV export) | ✅ |
 | Next | Team projects (groups + shared repos), GitHub integration, in-browser code runner, parent reports, English UI, PWA offline, Postgres for multi-server deploys | Planned |

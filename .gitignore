@@ -45,3 +45,6 @@ next-env.d.ts
 /prisma/*.db
 /prisma/*.db-journal
 /storage/
+
+# Pyodide runtime copied from node_modules on install
+/public/pyodide/

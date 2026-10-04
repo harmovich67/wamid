@@ -7,8 +7,10 @@ import { AnimatePresence, motion } from "motion/react";
 import {
   Bell,
   Bot,
+  ChartColumn,
   ClipboardCheck,
   ExternalLink,
+  FileText,
   Layers,
   LayoutDashboard,
   ListChecks,
@@ -18,6 +20,7 @@ import {
   Sparkles,
   Trophy,
   Users,
+  UsersRound,
   X,
 } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
@@ -39,8 +42,16 @@ const GROUPS = [
     label: "الطلاب",
     items: [
       { href: "/admin/students", label: "الطلاب والصلاحيات", icon: Users, color: "#38BDF8" },
+      { href: "/admin/groups", label: "الفصول", icon: UsersRound, color: "#A78BFA" },
       { href: "/admin/submissions", label: "التسليمات", icon: ClipboardCheck, badge: "pending", color: "#FF6B81" },
       { href: "/admin/chats", label: "رسائل الطلاب", icon: MessagesSquare, badge: "chat", color: "#22C5A0" },
+    ],
+  },
+  {
+    label: "المتابعة",
+    items: [
+      { href: "/admin/analytics", label: "التحليلات", icon: ChartColumn, color: "#7C5CFF" },
+      { href: "/admin/reports", label: "تقارير أولياء الأمور", icon: FileText, color: "#38BDF8" },
     ],
   },
   {
@@ -72,6 +83,9 @@ const MOBILE_MAIN_TABS = [
 
 // Additional tools in mobile "More" sheet
 const MORE_ROUTES = [
+  { href: "/admin/groups", label: "الفصول", desc: "مجموعات طلاب بصلاحيات وإعلانات مشتركة", icon: UsersRound, color: "#A78BFA" },
+  { href: "/admin/analytics", label: "التحليلات", desc: "أين يتوقف الطلاب وأصعب الأسئلة وتصدير Excel", icon: ChartColumn, color: "#7C5CFF" },
+  { href: "/admin/reports", label: "تقارير أولياء الأمور", desc: "إرسال تقرير كل طالب لأهله على واتساب", icon: FileText, color: "#38BDF8" },
   { href: "/admin/chats", label: "رسائل الطلاب", desc: "الدردشة الخاصة مع كل طالب والملفات المرسلة", icon: MessagesSquare, color: "#22C5A0", badge: "chat" },
   { href: "/admin/tasks", label: "المهام والتحديات", desc: "واجبات وتحديات برمجية للمستويات", icon: ListChecks, color: "#FFB547" },
   { href: "/admin/achievements", label: "الإنجازات والأوسمة", desc: "أوسمة ونقاط تميّز للطلاب", icon: Trophy, color: "#F472B6" },

@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Flame, KeyRound, Search, ShieldCheck, UserPlus, Users, Wand2, Zap } from "lucide-react";
+import { Flame, KeyRound, Search, ShieldCheck, SquareTerminal, UserPlus, Users, UsersRound, Wand2, Zap } from "lucide-react";
 import { PageHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Select, Textarea } from "@/components/ui/Field";
@@ -18,7 +18,7 @@ import { ResourcePicker } from "./ResourcePicker";
 import { api, toISO } from "@/lib/client";
 import { cn, formatNumber, generatePassword, timeAgo } from "@/lib/utils";
 
-const EMPTY = { name: "", username: "", password: "", birthYear: "", email: "", guardianContact: "", notes: "", aiEnabled: true, levelIds: [], avatarColor: "#7C5CFF", avatar: null };
+const EMPTY = { name: "", username: "", password: "", birthYear: "", email: "", guardianContact: "", notes: "", aiEnabled: true, codeEnabled: true, levelIds: [], avatarColor: "#7C5CFF", avatar: null };
 
 function CreateStudentModal({ open, onClose, levels }) {
   const router = useRouter();
@@ -131,6 +131,7 @@ function CreateStudentModal({ open, onClose, levels }) {
           <Textarea rows={2} value={form.notes} onChange={set("notes")} />
         </Field>
         <Switch className="sm:col-span-2" checked={form.aiEnabled} onChange={(v) => setForm({ ...form, aiEnabled: v })} label="تفعيل المساعد الذكي" description="يمكن للطالب استخدام ومضة AI" />
+        <Switch className="sm:col-span-2" checked={form.codeEnabled} onChange={(v) => setForm({ ...form, codeEnabled: v })} label="تفعيل محرر الكود" description="تشغيل الكود داخل الدروس والمختبر" />
       </form>
     </Modal>
   );
@@ -206,9 +207,62 @@ function BulkAccessModal({ open, onClose, userIds, levels, tasks }) {
   );
 }
 
-export function StudentsManager({ students, levels, tasks, openNew }) {
+function AddToGroupModal({ open, onClose, userIds, groups }) {
+  const router = useRouter();
+  const [groupId, setGroupId] = useState(groups[0]?.id ?? "");
+  const [saving, setSaving] = useState(false);
+
+  async function save() {
+    const group = groups.find((g) => g.id === groupId);
+    if (!group) return;
+    setSaving(true);
+    try {
+      const res = await api(`/api/admin/groups/${group.id}/members`, { method: "PUT", body: { userIds: [...new Set([...group.memberIds, ...userIds])] } });
+      toast.success(`أُضيف ${formatNumber(res.added)} طالب إلى «${group.name}»`);
+      onClose();
+      router.refresh();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      size="sm"
+      title="إضافة إلى فصل"
+      description={`${formatNumber(userIds.length)} طالب محدد — يرثون صلاحيات الفصل ويصلهم إشعار.`}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>إلغاء</Button>
+          <Button onClick={save} loading={saving} disabled={!groupId}>إضافة</Button>
+        </>
+      }
+    >
+      <div className="space-y-2">
+        {groups.map((g) => (
+          <label key={g.id} className={cn("flex cursor-pointer items-center gap-3 rounded-2xl border p-3 transition", groupId === g.id ? "border-primary bg-primary-soft/50" : "border-line hover:bg-surface-2")}>
+            <input type="radio" name="group" checked={groupId === g.id} onChange={() => setGroupId(g.id)} className="size-4 accent-[var(--primary)]" />
+            <span className="size-3 rounded-full" style={{ background: g.color }} />
+            <span className="flex-1 text-sm font-medium">{g.name}</span>
+            <span className="text-xs text-muted">{formatNumber(g.memberIds.length)} طالب</span>
+          </label>
+        ))}
+      </div>
+    </Modal>
+  );
+}
+
+export function StudentsManager({ students, levels, tasks, groups = [], openNew }) {
+  const router = useRouter();
+  const [codeBusy, setCodeBusy] = useState(false);
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("all");
+  const [groupFilter, setGroupFilter] = useState("all");
+  const [groupOpen, setGroupOpen] = useState(false);
   const [selected, setSelected] = useState([]);
   const [createOpen, setCreateOpen] = useState(openNew);
   const [bulkOpen, setBulkOpen] = useState(false);
@@ -218,11 +272,25 @@ export function StudentsManager({ students, levels, tasks, openNew }) {
     return students.filter(
       (s) =>
         (status === "all" || (status === "active" ? s.isActive : !s.isActive)) &&
+        (groupFilter === "all" || (groupFilter === "none" ? !s.groups.length : s.groups.some((g) => g.id === groupFilter))) &&
         (!term || s.name.toLowerCase().includes(term) || s.username.includes(term))
     );
-  }, [students, q, status]);
+  }, [students, q, status, groupFilter]);
 
   const allSelected = filtered.length > 0 && filtered.every((s) => selected.includes(s.id));
+
+  async function setCode(enabled) {
+    setCodeBusy(true);
+    try {
+      const res = await api("/api/admin/code", { method: "POST", body: { userIds: selected, enabled } });
+      toast.success(`${enabled ? "فُعّل" : "أُوقف"} محرر الكود لـ ${formatNumber(res.count)} طالب`);
+      router.refresh();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setCodeBusy(false);
+    }
+  }
 
   return (
     <div>
@@ -231,6 +299,21 @@ export function StudentsManager({ students, levels, tasks, openNew }) {
         subtitle={`${formatNumber(students.length)} طالب مسجّل`}
         action={
           <>
+            {selected.length > 0 && (
+              <>
+                <Button variant="secondary" loading={codeBusy} onClick={() => setCode(true)}>
+                  {!codeBusy && <SquareTerminal className="size-4" />} تفعيل المحرر
+                </Button>
+                <Button variant="ghost" disabled={codeBusy} onClick={() => setCode(false)}>
+                  إيقاف المحرر
+                </Button>
+              </>
+            )}
+            {selected.length > 0 && groups.length > 0 && (
+              <Button variant="secondary" onClick={() => setGroupOpen(true)}>
+                <UsersRound className="size-4" /> إلى فصل ({formatNumber(selected.length)})
+              </Button>
+            )}
             {selected.length > 0 && (
               <Button variant="soft" onClick={() => setBulkOpen(true)}>
                 <ShieldCheck className="size-4" /> تعيين محتوى ({formatNumber(selected.length)})
@@ -248,6 +331,15 @@ export function StudentsManager({ students, levels, tasks, openNew }) {
           <Search className="pointer-events-none absolute start-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" />
           <Input className="ps-10" placeholder="ابحث بالاسم أو اسم المستخدم" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
+        {groups.length > 0 && (
+          <Select className="sm:w-48" value={groupFilter} onChange={(e) => setGroupFilter(e.target.value)} aria-label="الفصل">
+            <option value="all">كل الفصول</option>
+            {groups.map((g) => (
+              <option key={g.id} value={g.id}>{g.name}</option>
+            ))}
+            <option value="none">بدون فصل</option>
+          </Select>
+        )}
         <Select className="sm:w-44" value={status} onChange={(e) => setStatus(e.target.value)}>
           <option value="all">الكل</option>
           <option value="active">نشط</option>
@@ -289,8 +381,16 @@ export function StudentsManager({ students, levels, tasks, openNew }) {
                     <div className="flex items-center gap-2 truncate font-medium">
                       {s.name}
                       {!s.isActive && <Badge tone="coral">موقوف</Badge>}
+                      {!s.codeEnabled && <Badge tone="gray" icon={SquareTerminal}>بدون محرر</Badge>}
                     </div>
-                    <div className="truncate text-xs text-muted" dir="ltr">@{s.username}</div>
+                    <div className="flex min-w-0 items-center gap-1.5 text-xs text-muted">
+                      <span className="truncate" dir="ltr">@{s.username}</span>
+                      {s.groups.map((g) => (
+                        <span key={g.id} className="flex shrink-0 items-center gap-1 rounded-full bg-surface-2 px-1.5 py-px text-[10.5px]">
+                          <span className="size-1.5 rounded-full" style={{ background: g.color }} /> {g.name}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </Link>
                 <div className="col-start-2 flex flex-wrap items-center gap-2 text-sm md:col-start-auto">
@@ -300,7 +400,13 @@ export function StudentsManager({ students, levels, tasks, openNew }) {
                 </div>
                 <div className="col-start-2 text-sm text-muted md:col-start-auto">{formatNumber(s.lessonsDone)} درس مكتمل</div>
                 <div className="col-start-2 text-sm md:col-start-auto">
-                  {s.rules ? <span className="flex items-center gap-1 text-muted"><KeyRound className="size-3.5" /> {formatNumber(s.rules)} قاعدة</span> : <Badge tone="amber">لا محتوى مفتوح</Badge>}
+                  {s.rules || s.groupRules ? (
+                    <span className="flex items-center gap-1 text-muted">
+                      <KeyRound className="size-3.5" /> {formatNumber(s.rules)} قاعدة{s.groupRules ? ` + ${formatNumber(s.groupRules)} من الفصل` : ""}
+                    </span>
+                  ) : (
+                    <Badge tone="amber">لا محتوى مفتوح</Badge>
+                  )}
                 </div>
                 <div className="col-start-2 text-xs text-muted md:col-start-auto">{s.lastLoginAt ? timeAgo(s.lastLoginAt) : "لم يدخل بعد"}</div>
               </div>
@@ -312,6 +418,7 @@ export function StudentsManager({ students, levels, tasks, openNew }) {
 
       <CreateStudentModal open={createOpen} onClose={() => setCreateOpen(false)} levels={levels} />
       <BulkAccessModal open={bulkOpen} onClose={() => setBulkOpen(false)} userIds={selected} levels={levels} tasks={tasks} />
+      {groupOpen && <AddToGroupModal open onClose={() => setGroupOpen(false)} userIds={selected} groups={groups} />}
     </div>
   );
 }

@@ -17,6 +17,7 @@ import { StatCard } from "@/components/ui/StatCard";
 import { Switch } from "@/components/ui/Switch";
 import { Tabs } from "@/components/ui/Tabs";
 import { AccessEditor } from "./AccessEditor";
+import { ParentReportCard } from "./ParentReportCard";
 import { api } from "@/lib/client";
 import { SUBMISSION_STATUSES, SUBMISSION_TONES, TASK_TYPES } from "@/lib/constants";
 import { formatDate, formatNumber, generatePassword, timeAgo } from "@/lib/utils";
@@ -31,6 +32,7 @@ function SettingsTab({ student }) {
     guardianContact: student.guardianContact,
     notes: student.notes,
     aiEnabled: student.aiEnabled,
+    codeEnabled: student.codeEnabled,
     isActive: student.isActive,
     password: "",
     avatarColor: student.avatarColor,
@@ -110,6 +112,7 @@ function SettingsTab({ student }) {
         <div className="space-y-4 rounded-3xl border border-line bg-surface p-6">
           <Switch checked={form.isActive} onChange={(v) => setForm({ ...form, isActive: v })} label="الحساب نشط" description="الحساب الموقوف لا يستطيع الدخول" />
           <Switch checked={form.aiEnabled} onChange={(v) => setForm({ ...form, aiEnabled: v })} label="المساعد الذكي" description="السماح باستخدام ومضة AI" />
+          <Switch checked={form.codeEnabled} onChange={(v) => setForm({ ...form, codeEnabled: v })} label="محرر الكود" description="تشغيل Python وJavaScript وHTML داخل الدروس والمختبر" />
         </div>
         <div className="rounded-3xl border border-coral/30 bg-coral-soft/40 p-6">
           <div className="font-semibold text-coral">منطقة الخطر</div>
@@ -207,7 +210,7 @@ function ChatControl({ student }) {
   );
 }
 
-export function StudentDetail({ student, stats, courses, levels, tasks, rules, submissions, achievements, owned }) {
+export function StudentDetail({ student, stats, courses, levels, tasks, rules, groupRules = [], submissions, achievements, owned }) {
   const [tab, setTab] = useState("overview");
 
   return (
@@ -229,6 +232,15 @@ export function StudentDetail({ student, stats, courses, levels, tasks, rules, s
             <span>انضم {formatDate(student.createdAt)}</span>
             <span>آخر دخول: {student.lastLoginAt ? timeAgo(student.lastLoginAt) : "لم يدخل بعد"}</span>
           </div>
+          {student.groups.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {student.groups.map((g) => (
+                <Link key={g.id} href={`/admin/groups/${g.id}`} className="flex items-center gap-1.5 rounded-full border border-line px-2.5 py-0.5 text-xs font-medium hover:border-primary/40">
+                  <span className="size-2 rounded-full" style={{ background: g.color }} /> {g.name}
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
         <ChatControl student={student} />
       </div>
@@ -254,6 +266,15 @@ export function StudentDetail({ student, stats, courses, levels, tasks, rules, s
             <StatCard icon={ClipboardCheck} label="مهام مقبولة" value={formatNumber(stats.tasksApproved)} tone="sky" />
             <StatCard icon={Flame} label="السلسلة الحالية" value={formatNumber(student.streak)} hint={`الأفضل: ${formatNumber(stats.streak)}`} tone="amber" />
           </div>
+          {student.reportUrl && (
+            <ParentReportCard
+              studentId={student.id}
+              studentName={student.name}
+              guardianContact={student.guardianContact}
+              url={student.reportUrl}
+              lastSentAt={student.lastReportSentAt}
+            />
+          )}
           <div className="rounded-3xl border border-line bg-surface p-5">
             <h2 className="mb-4 font-semibold">التقدّم في الدورات</h2>
             {courses.length === 0 ? (
@@ -284,7 +305,7 @@ export function StudentDetail({ student, stats, courses, levels, tasks, rules, s
         </div>
       )}
 
-      {tab === "access" && <AccessEditor studentId={student.id} levels={levels} tasks={tasks} initialRules={rules} />}
+      {tab === "access" && <AccessEditor saveUrl={`/api/admin/students/${student.id}/access`} levels={levels} tasks={tasks} initialRules={rules} inheritedRules={groupRules} />}
 
       {tab === "submissions" && (
         <div className="overflow-hidden rounded-3xl border border-line bg-surface">

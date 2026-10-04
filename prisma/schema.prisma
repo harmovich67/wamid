@@ -44,6 +44,8 @@ model User {
   chatThread       ChatMessage[]           @relation("ChatThread")
   chatWritten      ChatMessage[]           @relation("ChatAuthor")
   pushSubscriptions PushSubscription[]
+  groupMemberships StudyGroupMember[]
+  quizAnswers      QuizAnswer[]
 }
 
 model StudentProfile {
@@ -58,7 +60,10 @@ model StudentProfile {
   guardianContact String?
   notes           String?  @db.Text
   aiEnabled       Boolean  @default(true)
+  codeEnabled     Boolean  @default(true) // the teacher decides whether this student can run code in the browser
   chatEnabled     Boolean  @default(false) // the teacher decides whether this student may message them
+  reportToken      String?   @unique @db.VarChar(64) // secret link to the read-only parent report
+  lastReportSentAt DateTime?
   createdAt       DateTime @default(now())
 }
 
@@ -145,7 +150,29 @@ model QuizQuestion {
   options      String  @db.Text // JSON: string[]
   correctIndex Int
   explanation  String? @db.Text
+  answers      QuizAnswer[]
 
+  @@index([lessonId])
+}
+
+// First and latest answer of each student to each question — powers "hardest questions" analytics.
+model QuizAnswer {
+  id           String       @id @default(cuid())
+  userId       String
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questionId   String
+  question     QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  lessonId     String
+  firstAnswer  Int
+  firstCorrect Boolean
+  lastAnswer   Int
+  lastCorrect  Boolean
+  attempts     Int          @default(1)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@unique([userId, questionId])
+  @@index([questionId])
   @@index([lessonId])
 }
 
@@ -253,6 +280,48 @@ model AccessRule {
 
   @@unique([userId, resourceType, resourceId])
   @@index([userId])
+}
+
+// ─── Classes (study groups) ───────────────────────────────────────
+// Members inherit the group's access rules; a student's personal rule always wins over them.
+
+model StudyGroup {
+  id          String             @id @default(cuid())
+  name        String
+  description String?            @db.Text
+  color       String             @default("#7C5CFF")
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  members     StudyGroupMember[]
+  rules       StudyGroupRule[]
+}
+
+model StudyGroupMember {
+  id        String     @id @default(cuid())
+  groupId   String
+  group     StudyGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime   @default(now())
+
+  @@unique([groupId, userId])
+  @@index([userId])
+}
+
+model StudyGroupRule {
+  id             String     @id @default(cuid())
+  groupId        String
+  group          StudyGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  resourceType   String     // LEVEL | COURSE | MODULE | LESSON | TASK
+  resourceId     String
+  effect         String     @default("ALLOW") // ALLOW | DENY
+  availableFrom  DateTime?
+  availableUntil DateTime?
+  notifiedAt     DateTime?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@unique([groupId, resourceType, resourceId])
 }
 
 // ─── Notifications ────────────────────────────────────────────────

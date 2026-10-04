@@ -11,7 +11,7 @@ const tickFmt = new Intl.DateTimeFormat("ar-u-nu-latn", { day: "numeric", month:
  * names the series), hairline baseline, peak labeled directly, per-bar hover tooltip,
  * and a visually-hidden table so the numbers are available without the chart.
  */
-export function ActivityChart({ data, height = 180 }) {
+export function ActivityChart({ data, height = 180, label = "عدد الدروس المكتملة يوميًا خلال آخر 14 يومًا" }) {
   const [hover, setHover] = useState(null);
   const max = Math.max(1, ...data.map((d) => d.value));
   const peak = data.reduce((best, d, i) => (d.value > (data[best]?.value ?? -1) ? i : best), 0);
@@ -19,7 +19,7 @@ export function ActivityChart({ data, height = 180 }) {
 
   return (
     <div className="relative touch-pan-y">
-      <div className="relative flex items-end gap-0.5 touch-pan-y" style={{ height }} role="img" aria-label="عدد الدروس المكتملة يوميًا خلال آخر 14 يومًا">
+      <div className="relative flex items-end gap-0.5 touch-pan-y" style={{ height }} role="img" aria-label={label}>
         {[0.5, 1].map((f) => (
           <div key={f} className="pointer-events-none absolute inset-x-0 border-t border-line" style={{ bottom: `${f * 100}%` }}>
             <span className="absolute -top-2.5 end-full me-2 text-[10px] text-muted">{formatNumber(Math.round(nice * f))}</span>
@@ -59,7 +59,7 @@ export function ActivityChart({ data, height = 180 }) {
       <div className="mt-2 flex border-t border-line pt-2 text-[10px] text-muted">
         {data.map((d, i) => (
           <span key={d.date} className="flex-1 text-center">
-            {i % 3 === 0 || i === data.length - 1 ? tickFmt.format(new Date(d.date)) : ""}
+            {i % Math.max(1, Math.ceil(data.length / 6)) === 0 || i === data.length - 1 ? tickFmt.format(new Date(d.date)) : ""}
           </span>
         ))}
       </div>

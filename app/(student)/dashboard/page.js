@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, BookOpenCheck, CalendarClock, Flame, ListChecks, Medal, Play, Sparkles, Swords, Trophy, Zap } from "lucide-react";
+import { ArrowLeft, BookOpenCheck, CalendarClock, Flame, FlaskConical, ListChecks, Medal, Play, Sparkles, Swords, Trophy, Zap } from "lucide-react";
 import { requireStudent } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getShellStats, getTasks, getTree, isPending } from "@/lib/student-data";
@@ -107,6 +107,15 @@ export default async function DashboardPage() {
                 >
                   <ListChecks className="size-4.5 sm:size-5 shrink-0" /> مهامي
                 </Button>
+                {stats.codeEnabled && (
+                  <Button
+                    href="/playground"
+                    size="lg"
+                    className="w-full sm:w-auto min-w-0 max-w-full justify-center border border-white/15 bg-white/10 text-white shadow-none hover:bg-white/15"
+                  >
+                    <FlaskConical className="size-4.5 sm:size-5 shrink-0" /> المختبر
+                  </Button>
+                )}
               </div>
             </div>
 

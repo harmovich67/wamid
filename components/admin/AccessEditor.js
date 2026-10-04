@@ -7,7 +7,7 @@ import { CalendarClock, ChevronDown, Eye, EyeOff, RotateCcw, Save } from "lucide
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { Input } from "@/components/ui/Field";
-import { resolveChain, ruleKey } from "@/lib/access-rules";
+import { mergeGroupRules, resolveChain, ruleKey, withGroupRules } from "@/lib/access-rules";
 import { api, toISO, toLocalInput } from "@/lib/client";
 import { TASK_TYPES } from "@/lib/constants";
 import { cn, formatDateTime } from "@/lib/utils";
@@ -73,6 +73,11 @@ function Row({ type, id, title, depth, rules, setRule, effective, icon, meta, ex
           {draft && <span className="ms-2 text-[11px] text-amber">(مسودة)</span>}
         </span>
         {meta && <span className="hidden text-[11px] text-muted sm:inline">{meta}</span>}
+        {!rule && effective.group && (
+          <span className="max-w-28 truncate rounded-full border border-line px-2 py-0.5 text-[11px] text-muted" title={`موروث من فصل: ${effective.group}`}>
+            🎒 {effective.group}
+          </span>
+        )}
         <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-medium", st.cls)} title={effective.via ? `عبر قاعدة ${effective.via}` : undefined}>
           {st.label}
           {!rule && effective.via && " ↵"}
@@ -106,10 +111,11 @@ function Row({ type, id, title, depth, rules, setRule, effective, icon, meta, ex
 }
 
 /**
- * Per-student permission tree. Each node can inherit, allow or deny, with optional dates.
- * The badge shows the effective result using the same resolution as the server.
+ * Permission tree for a student or a class (`saveUrl` decides which). Each node can inherit, allow
+ * or deny, with optional dates. The badge shows the effective result using the same resolution as
+ * the server — for a student that includes the rules inherited from their classes.
  */
-export function AccessEditor({ studentId, levels, tasks, initialRules }) {
+export function AccessEditor({ saveUrl, levels, tasks, initialRules, inheritedRules = [], audience = "student" }) {
   const router = useRouter();
   const toMap = (list) => new Map(list.map((r) => [ruleKey(r.resourceType, r.resourceId), r]));
   const [rules, setRules] = useState(() => toMap(initialRules));
@@ -118,6 +124,8 @@ export function AccessEditor({ studentId, levels, tasks, initialRules }) {
   const [hideDrafts, setHideDrafts] = useState(false);
   const dirty = useMemo(() => JSON.stringify([...rules.values()]) !== JSON.stringify(initialRules), [rules, initialRules]);
   const now = useMemo(() => new Date(), []);
+  const groupMap = useMemo(() => mergeGroupRules(inheritedRules, now), [inheritedRules, now]);
+  const effectiveRules = useMemo(() => withGroupRules(rules, groupMap), [rules, groupMap]);
 
   function setRule(type, id, rule) {
     setRules((prev) => {
@@ -132,8 +140,8 @@ export function AccessEditor({ studentId, levels, tasks, initialRules }) {
   async function save() {
     setSaving(true);
     try {
-      await api(`/api/admin/students/${studentId}/access`, { method: "PUT", body: { rules: [...rules.values()] } });
-      toast.success("تم حفظ الصلاحيات. سيصل الطالب إشعار بما فُتح له.");
+      await api(saveUrl, { method: "PUT", body: { rules: [...rules.values()] } });
+      toast.success(audience === "group" ? "تم حفظ صلاحيات الفصل. سيصل كل طلابه إشعار بما فُتح لهم." : "تم حفظ الصلاحيات. سيصل الطالب إشعار بما فُتح له.");
       router.refresh();
     } catch (err) {
       toast.error(err.message);
@@ -151,15 +159,15 @@ export function AccessEditor({ studentId, levels, tasks, initialRules }) {
   }, [levels]);
 
   function taskEffective(t) {
-    const direct = resolveChain(rules, [["TASK", t.id]], now);
+    const direct = resolveChain(effectiveRules, [["TASK", t.id]], now);
     if (direct.state !== "unassigned") return direct;
     if (t.lessonId && lessonIndex.has(t.lessonId)) {
       const { l, c, mod } = lessonIndex.get(t.lessonId);
-      return resolveChain(rules, [["LESSON", t.lessonId], ["MODULE", mod.id], ["COURSE", c.id], ["LEVEL", l.id]], now);
+      return resolveChain(effectiveRules, [["LESSON", t.lessonId], ["MODULE", mod.id], ["COURSE", c.id], ["LEVEL", l.id]], now);
     }
     if (t.courseId) {
       const level = levels.find((l) => l.courses.some((c) => c.id === t.courseId));
-      return resolveChain(rules, [["COURSE", t.courseId], ["LEVEL", level?.id]], now);
+      return resolveChain(effectiveRules, [["COURSE", t.courseId], ["LEVEL", level?.id]], now);
     }
     return direct;
   }
@@ -169,6 +177,7 @@ export function AccessEditor({ studentId, levels, tasks, initialRules }) {
       <div className="flex flex-col gap-3 rounded-2xl bg-primary-soft/60 p-4 text-sm sm:flex-row sm:items-center">
         <p className="flex-1 text-muted">
           <b className="text-fg">القاعدة الأدق تفوز:</b> درس ← وحدة ← دورة ← مستوى. مثلًا اسمح بالدورة كاملة ثم امنع درسًا بعينه. بدون أي قاعدة يبقى المحتوى مقفلًا.
+          {audience === "group" ? " كل طلاب الفصل يرثون هذه الصلاحيات، والقاعدة الخاصة بطالب تتغلب عليها." : groupMap.size > 0 ? " 🎒 العناصر الموسومة باسم فصل موروثة منه، واختيارك هنا يتغلب عليها." : ""}
         </p>
         <div className="flex gap-2">
           <Button variant="ghost" size="sm" onClick={() => setHideDrafts((h) => !h)}>
@@ -192,7 +201,7 @@ export function AccessEditor({ studentId, levels, tasks, initialRules }) {
               id={level.id}
               title={level.title}
               depth={0}
-              effective={resolveChain(rules, [["LEVEL", level.id]], now)}
+              effective={resolveChain(effectiveRules, [["LEVEL", level.id]], now)}
               icon={<Icon name={level.icon} className="size-4" style={{ color: level.color }} />}
               meta={`${level.courses.length} دورات`}
               expandable
@@ -211,7 +220,7 @@ export function AccessEditor({ studentId, levels, tasks, initialRules }) {
                       title={course.title}
                       depth={1}
                       draft={!course.isPublished}
-                      effective={resolveChain(rules, [["COURSE", course.id], ["LEVEL", level.id]], now)}
+                      effective={resolveChain(effectiveRules, [["COURSE", course.id], ["LEVEL", level.id]], now)}
                       icon={<Icon name={course.icon} className="size-4" style={{ color: course.color }} />}
                       expandable
                       expanded={expanded[course.id]}
@@ -226,7 +235,7 @@ export function AccessEditor({ studentId, levels, tasks, initialRules }) {
                             id={mod.id}
                             title={mod.title}
                             depth={2}
-                            effective={resolveChain(rules, [["MODULE", mod.id], ["COURSE", course.id], ["LEVEL", level.id]], now)}
+                            effective={resolveChain(effectiveRules, [["MODULE", mod.id], ["COURSE", course.id], ["LEVEL", level.id]], now)}
                             expandable
                             expanded={expanded[mod.id] ?? true}
                             onExpand={() => setExpanded((e) => ({ ...e, [mod.id]: !(e[mod.id] ?? true) }))}
@@ -243,7 +252,7 @@ export function AccessEditor({ studentId, levels, tasks, initialRules }) {
                                   title={lesson.title}
                                   depth={3}
                                   draft={!lesson.isPublished}
-                                  effective={resolveChain(rules, [["LESSON", lesson.id], ["MODULE", mod.id], ["COURSE", course.id], ["LEVEL", level.id]], now)}
+                                  effective={resolveChain(effectiveRules, [["LESSON", lesson.id], ["MODULE", mod.id], ["COURSE", course.id], ["LEVEL", level.id]], now)}
                                 />
                               ))}
                         </div>

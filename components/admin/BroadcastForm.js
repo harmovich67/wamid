@@ -14,9 +14,14 @@ import { RichTextEditor } from "@/components/editor/RichTextEditor";
 import { api } from "@/lib/client";
 import { cn, formatNumber, percent, timeAgo } from "@/lib/utils";
 
-export function BroadcastForm({ students, recent }) {
+export function BroadcastForm({ students, recent, groups = [], initialGroup = null }) {
   const router = useRouter();
-  const [form, setForm] = useState({ target: "all", userIds: [], title: "", body: "", link: "" });
+  const [form, setForm] = useState({ target: initialGroup ? "groups" : "all", userIds: [], title: "", body: "", link: "" });
+  const [groupIds, setGroupIds] = useState(initialGroup ? [initialGroup] : []);
+  // Classes are a shortcut for "selected students": their members are resolved here.
+  const groupMembers = [...new Set(groups.filter((g) => groupIds.includes(g.id)).flatMap((g) => g.memberIds))];
+  const payload = form.target === "groups" ? { ...form, target: "selected", userIds: groupMembers } : form;
+  const noRecipients = (form.target === "selected" && !form.userIds.length) || (form.target === "groups" && !groupMembers.length);
   const [sending, setSending] = useState(false);
   const [formKey, setFormKey] = useState(0);
 
@@ -24,7 +29,7 @@ export function BroadcastForm({ students, recent }) {
     e.preventDefault();
     setSending(true);
     try {
-      const res = await api("/api/admin/notifications", { method: "POST", body: form });
+      const res = await api("/api/admin/notifications", { method: "POST", body: payload });
       toast.success(`وصل الإعلان إلى ${formatNumber(res.count)} طالب 📣 — سيظهر في جرس الإشعارات عندهم خلال ثوانٍ`);
       setForm({ ...form, title: "", body: "", link: "" });
       setFormKey((k) => k + 1);
@@ -44,9 +49,10 @@ export function BroadcastForm({ students, recent }) {
       />
       <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_380px]">
         <form onSubmit={send} className="min-w-0 space-y-4 self-start rounded-3xl border border-line bg-surface p-4 shadow-card sm:p-6">
-          <div className="grid grid-cols-2 gap-2">
+          <div className={cn("grid gap-2", groups.length ? "grid-cols-3" : "grid-cols-2")}>
             {[
               ["all", "كل الطلاب"],
+              ...(groups.length ? [["groups", "فصل"]] : []),
               ["selected", "طلاب محددون"],
             ].map(([v, l]) => (
               <button
@@ -60,6 +66,26 @@ export function BroadcastForm({ students, recent }) {
               </button>
             ))}
           </div>
+          {form.target === "groups" && (
+            <div className="flex flex-wrap gap-2 rounded-2xl border border-line p-2.5">
+              {groups.map((g) => {
+                const on = groupIds.includes(g.id);
+                return (
+                  <button
+                    key={g.id}
+                    type="button"
+                    onClick={() => setGroupIds((ids) => (on ? ids.filter((x) => x !== g.id) : [...ids, g.id]))}
+                    className={cn("flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition", on ? "border-primary bg-primary-soft font-medium text-primary" : "border-line text-muted hover:text-fg")}
+                  >
+                    <span className="size-2 rounded-full" style={{ background: g.color }} />
+                    {g.name}
+                    <span className="text-xs opacity-70">({formatNumber(g.memberIds.length)})</span>
+                  </button>
+                );
+              })}
+              <p className="w-full px-1 text-xs text-muted">سيصل الإعلان إلى {formatNumber(groupMembers.length)} طالب.</p>
+            </div>
+          )}
           {form.target === "selected" && (
             <div className="scrollbar-thin grid max-h-52 gap-1 overflow-y-auto rounded-2xl border border-line p-2 sm:grid-cols-2">
               {students.map((s) => (
@@ -85,7 +111,7 @@ export function BroadcastForm({ students, recent }) {
           <Field label="رابط داخلي (اختياري)" hint="زر يظهر في الإعلان — مثل /tasks أو /roadmap">
             <Input dir="ltr" value={form.link} onChange={(e) => setForm({ ...form, link: e.target.value })} placeholder="/tasks" />
           </Field>
-          <Button type="submit" size="lg" loading={sending} disabled={!form.title.trim() || (form.target === "selected" && !form.userIds.length)}>
+          <Button type="submit" size="lg" loading={sending} disabled={!form.title.trim() || noRecipients}>
             {!sending && <Send className="size-4 -scale-x-100" />} إرسال الإعلان
           </Button>
         </form>

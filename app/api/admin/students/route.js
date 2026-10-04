@@ -26,6 +26,7 @@ export const POST = handler({ role: "ADMIN" }, async ({ req }) => {
           guardianContact: data.guardianContact ?? null,
           notes: data.notes ?? null,
           aiEnabled: data.aiEnabled ?? true,
+          codeEnabled: data.codeEnabled ?? true,
         },
       },
       accessRules: {

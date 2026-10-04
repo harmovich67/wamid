@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
-import { Bot, Flame, House, ListChecks, MessagesSquare, Route, Trophy, Zap } from "lucide-react";
+import { Bot, FlaskConical, Flame, House, ListChecks, MessagesSquare, Route, Trophy, Zap } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { UserMenu } from "./UserMenu";
@@ -18,6 +18,7 @@ const NAV = [
   { href: "/tasks", label: "المهام", icon: ListChecks, badgeKey: "pendingTasks", color: "#FFB547" },
   { href: "/assistant", label: "ومضة AI", icon: Bot, aiOnly: true, color: "#A78BFA" },
   { href: "/achievements", label: "الإنجازات", icon: Trophy, color: "#F472B6" },
+  { href: "/playground", label: "المختبر", icon: FlaskConical, codeOnly: true, desktopOnly: true, color: "#22C5A0" },
   // Desktop sidebar only — on phones the chat lives in the top bar so the tab bar stays at 5 items.
   { href: "/chat", label: "مراسلة المعلّم", icon: MessagesSquare, chatOnly: true, desktopOnly: true, badgeKey: "chat", color: "#38BDF8" },
 ];
@@ -30,7 +31,7 @@ export function StudentShell({ user, stats: initialStats, children }) {
   const pathname = usePathname();
   const stats = useLiveCounts(initialStats);
   const showChat = stats.chatEnabled || stats.chat > 0;
-  const nav = NAV.filter((n) => (!n.aiOnly || stats.aiAvailable) && (!n.chatOnly || showChat));
+  const nav = NAV.filter((n) => (!n.aiOnly || stats.aiAvailable) && (!n.chatOnly || showChat) && (!n.codeOnly || stats.codeEnabled));
   const chatActive = isActive(pathname, { href: "/chat" });
 
   return (

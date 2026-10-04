@@ -1,6 +1,8 @@
 import { AlertTriangle, Download, Info, Lightbulb, Paperclip } from "lucide-react";
 import { Markdown } from "./Markdown";
 import { CodeBlock } from "./CodeBlock";
+import { RunnableCode } from "@/components/code/RunnableCode";
+import { isRunnable } from "@/lib/runner";
 import { cn, formatBytes, toEmbedUrl } from "@/lib/utils";
 
 const CALLOUTS = {
@@ -33,12 +35,20 @@ function VideoBlock({ block }) {
   );
 }
 
-export function Block({ block }) {
+export function Block({ block, runnable = true }) {
   switch (block.type) {
     case "text":
       return <Markdown>{block.markdown}</Markdown>;
-    case "code":
-      return <CodeBlock code={block.code} language={block.language} title={block.title} />;
+    case "code": {
+      const view = <CodeBlock code={block.code} language={block.language} title={block.title} />;
+      return runnable && isRunnable(block.language) ? (
+        <RunnableCode code={block.code} language={block.language} title={block.title}>
+          {view}
+        </RunnableCode>
+      ) : (
+        view
+      );
+    }
     case "video":
       return <VideoBlock block={block} />;
     case "image":
@@ -84,11 +94,11 @@ export function Block({ block }) {
   }
 }
 
-export function BlockRenderer({ blocks = [] }) {
+export function BlockRenderer({ blocks = [], runnable = true }) {
   return (
     <div className="space-y-6">
       {blocks.map((block) => (
-        <Block key={block.id} block={block} />
+        <Block key={block.id} block={block} runnable={runnable} />
       ))}
     </div>
   );

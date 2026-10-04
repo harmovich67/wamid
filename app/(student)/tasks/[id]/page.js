@@ -97,6 +97,7 @@ export default async function TaskPage({ params }) {
               taskId={task.id}
               initial={sub ? { content: sub.content ?? "", code: sub.code ?? "", links: parseJSON(sub.links, []), files: parseJSON(sub.files, []) } : null}
               status={sub?.status}
+              canRun={user.student?.codeEnabled !== false}
             />
           ) : sub ? (
             <section className="rounded-[2rem] border border-line bg-surface p-6 shadow-card">

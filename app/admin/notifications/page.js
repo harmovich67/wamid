@@ -2,12 +2,14 @@ import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { BroadcastForm } from "@/components/admin/BroadcastForm";
 import { REACTION_EMOJIS } from "@/lib/constants";
+import { listGroups } from "@/lib/groups";
 
 export const metadata = { title: "الإعلانات" };
 
-export default async function AdminNotificationsPage() {
+export default async function AdminNotificationsPage({ searchParams }) {
   await requireAdmin();
-  const [students, announcements] = await Promise.all([
+  const { group } = await searchParams;
+  const [students, announcements, groups] = await Promise.all([
     prisma.user.findMany({ where: { role: "STUDENT", isActive: true }, orderBy: { name: "asc" }, select: { id: true, name: true, avatarColor: true } }),
     prisma.announcement.findMany({
       orderBy: { createdAt: "desc" },
@@ -18,11 +20,15 @@ export default async function AdminNotificationsPage() {
         replies: { select: { studentId: true, author: { select: { role: true } } } },
       },
     }),
+    listGroups(),
   ]);
+  const active = new Set(students.map((s) => s.id));
 
   return (
     <BroadcastForm
       students={students}
+      groups={groups.map((g) => ({ id: g.id, name: g.name, color: g.color, memberIds: g.memberIds.filter((id) => active.has(id)) }))}
+      initialGroup={groups.some((g) => g.id === group) ? group : null}
       recent={announcements.map((a) => ({
         id: a.id,
         title: a.title,

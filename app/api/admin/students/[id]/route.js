@@ -28,8 +28,8 @@ export const PATCH = handler({ role: "ADMIN" }, async ({ req, params }) => {
       ...userData,
       student: {
         upsert: {
-          create: { birthYear: data.birthYear ?? null, guardianContact: data.guardianContact ?? null, notes: data.notes ?? null, aiEnabled: data.aiEnabled ?? true },
-          update: { birthYear: data.birthYear, guardianContact: data.guardianContact, notes: data.notes, aiEnabled: data.aiEnabled },
+          create: { birthYear: data.birthYear ?? null, guardianContact: data.guardianContact ?? null, notes: data.notes ?? null, aiEnabled: data.aiEnabled ?? true, codeEnabled: data.codeEnabled ?? true },
+          update: { birthYear: data.birthYear, guardianContact: data.guardianContact, notes: data.notes, aiEnabled: data.aiEnabled, codeEnabled: data.codeEnabled },
         },
       },
     },

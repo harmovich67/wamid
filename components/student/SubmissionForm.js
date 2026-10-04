@@ -8,12 +8,13 @@ import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Field";
 import { RichTextEditor } from "@/components/editor/RichTextEditor";
 import { CodeField } from "@/components/editor/CodeField";
+import { RunPanel } from "@/components/code/RunPanel";
 import { FileButton } from "@/components/ui/FileButton";
 import { Tabs } from "@/components/ui/Tabs";
 import { api } from "@/lib/client";
 import { formatBytes } from "@/lib/utils";
 
-export function SubmissionForm({ taskId, initial, status }) {
+export function SubmissionForm({ taskId, initial, status, canRun = true }) {
   const router = useRouter();
   const [tab, setTab] = useState("text");
   const [form, setForm] = useState(initial ?? { content: "", code: "", links: [], files: [] });
@@ -84,6 +85,7 @@ export function SubmissionForm({ taskId, initial, status }) {
           }}
         />
       )}
+      {canRun && tab === "code" && form.code.trim() && <RunPanel language={codeLang} code={form.code} className="mt-2" />}
       {tab === "links" && (
         <div className="space-y-4">
           <Field label="روابط (GitHub، Replit، موقعك…)">
