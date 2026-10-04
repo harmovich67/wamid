@@ -12,7 +12,8 @@
     "db:seed": "node --env-file-if-exists=.env prisma/seed.js",
     "db:reset": "prisma db push --force-reset && npm run db:seed",
     "db:studio": "prisma studio",
-    "setup": "prisma db push && npm run db:seed"
+    "setup": "prisma db push && npm run db:seed",
+    "push:keys": "web-push generate-vapid-keys"
   },
   "dependencies": {
     "@google/genai": "^2.24.0",
@@ -43,6 +44,7 @@
     "server-only": "^0.0.1",
     "sonner": "^2.0.8",
     "tailwind-merge": "^3.7.0",
+    "web-push": "^3.6.7",
     "zod": "^4.6.5"
   },
   "devDependencies": {

@@ -56,6 +56,7 @@ export default async function StudentPage({ params }) {
     guardianContact: student.student?.guardianContact ?? "",
     notes: student.student?.notes ?? "",
     aiEnabled: student.student?.aiEnabled ?? true,
+    chatEnabled: student.student?.chatEnabled ?? false,
     streak: liveStreak(student.student),
     rank: rankFor(stats.xp).current.title,
   };

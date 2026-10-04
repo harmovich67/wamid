@@ -3,28 +3,35 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
-import { Bot, Flame, House, ListChecks, Route, Trophy, Zap } from "lucide-react";
+import { Bot, Flame, House, ListChecks, MessagesSquare, Route, Trophy, Zap } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { UserMenu } from "./UserMenu";
 import { NotificationBell } from "./NotificationBell";
+import { PushPrompt } from "./PushPrompt";
+import { useLiveCounts } from "./useLiveCounts";
 import { cn, formatNumber } from "@/lib/utils";
 
 const NAV = [
   { href: "/dashboard", label: "الرئيسية", icon: House, color: "#7C5CFF" },
   { href: "/roadmap", label: "المسار", icon: Route, match: ["/roadmap", "/courses", "/lessons"], color: "#22C5A0" },
-  { href: "/tasks", label: "المهام", icon: ListChecks, badgeKey: "tasks", color: "#FFB547" },
+  { href: "/tasks", label: "المهام", icon: ListChecks, badgeKey: "pendingTasks", color: "#FFB547" },
   { href: "/assistant", label: "ومضة AI", icon: Bot, aiOnly: true, color: "#A78BFA" },
   { href: "/achievements", label: "الإنجازات", icon: Trophy, color: "#F472B6" },
+  // Desktop sidebar only — on phones the chat lives in the top bar so the tab bar stays at 5 items.
+  { href: "/chat", label: "مراسلة المعلّم", icon: MessagesSquare, chatOnly: true, desktopOnly: true, badgeKey: "chat", color: "#38BDF8" },
 ];
 
 function isActive(pathname, item) {
   return (item.match ?? [item.href]).some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
-export function StudentShell({ user, stats, children }) {
+export function StudentShell({ user, stats: initialStats, children }) {
   const pathname = usePathname();
-  const nav = NAV.filter((n) => !n.aiOnly || stats.aiAvailable);
+  const stats = useLiveCounts(initialStats);
+  const showChat = stats.chatEnabled || stats.chat > 0;
+  const nav = NAV.filter((n) => (!n.aiOnly || stats.aiAvailable) && (!n.chatOnly || showChat));
+  const chatActive = isActive(pathname, { href: "/chat" });
 
   return (
     <div className="min-h-dvh">
@@ -41,6 +48,7 @@ export function StudentShell({ user, stats, children }) {
               <Link
                 key={item.href}
                 href={item.href}
+                prefetch
                 className={cn(
                   "group relative flex items-center gap-3 rounded-2xl px-2 py-2 text-[15px] font-medium transition-colors",
                   active ? "text-white" : "text-muted hover:text-fg"
@@ -62,9 +70,9 @@ export function StudentShell({ user, stats, children }) {
                   <item.icon className="size-5" />
                 </span>
                 <span className="relative">{item.label}</span>
-                {item.badgeKey && stats.pendingTasks > 0 && (
+                {item.badgeKey && stats[item.badgeKey] > 0 && (
                   <span className={cn("relative ms-auto rounded-full px-2 py-0.5 text-[11px] font-bold", active ? "bg-white text-primary" : "bg-coral text-white")}>
-                    {stats.pendingTasks}
+                    {stats[item.badgeKey]}
                   </span>
                 )}
               </Link>
@@ -107,7 +115,25 @@ export function StudentShell({ user, stats, children }) {
               <Zap className="size-3.5 fill-current sm:size-4" />
               <span>{formatNumber(stats.xp)}</span>
             </div>
-            <NotificationBell initialUnread={stats.unread} allHref="/notifications" />
+            {showChat && (
+              <Link
+                href="/chat"
+                prefetch
+                className={cn(
+                  "relative grid size-10 place-items-center rounded-xl transition-colors lg:hidden",
+                  chatActive ? "bg-primary-soft text-primary" : "text-muted hover:bg-surface-2 hover:text-fg"
+                )}
+                aria-label={`مراسلة المعلّم${stats.chat ? ` (${stats.chat} جديدة)` : ""}`}
+              >
+                <MessagesSquare className="size-5" />
+                {stats.chat > 0 && (
+                  <span className="absolute end-1 top-1 grid min-w-4 place-items-center rounded-full bg-coral px-1 text-[10px] font-bold leading-4 text-white ring-2 ring-bg">
+                    {stats.chat > 9 ? "9+" : stats.chat}
+                  </span>
+                )}
+              </Link>
+            )}
+            <NotificationBell initialUnread={initialStats.unread} allHref="/notifications" />
             <ThemeToggle className="hidden sm:grid" />
             <UserMenu user={user} subtitle={`@${user.username}`} profileHref="/profile" />
           </div>
@@ -121,12 +147,13 @@ export function StudentShell({ user, stats, children }) {
       {/* Mobile bottom navigation */}
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden shadow-[0_-4px_24px_rgba(0,0,0,0.06)]">
         <div className="mx-auto flex max-w-lg items-stretch justify-around px-1 py-1">
-          {nav.map((item) => {
+          {nav.filter((item) => !item.desktopOnly).map((item) => {
             const active = isActive(pathname, item);
             return (
               <Link
                 key={item.href}
                 href={item.href}
+                prefetch
                 className="relative flex flex-1 flex-col items-center gap-0.5 py-1 text-[10.5px] font-medium transition-transform active:scale-95"
               >
                 {active && (
@@ -143,9 +170,9 @@ export function StudentShell({ user, stats, children }) {
                   )}
                 >
                   <item.icon className="size-4.5 sm:size-5" style={active ? { color: item.color } : undefined} />
-                  {item.badgeKey && stats.pendingTasks > 0 && (
+                  {item.badgeKey && stats[item.badgeKey] > 0 && (
                     <span className="absolute -end-1 -top-1 grid min-w-4 place-items-center rounded-full bg-coral px-1 text-[9.5px] font-bold leading-3.5 text-white shadow-xs">
-                      {stats.pendingTasks}
+                      {stats[item.badgeKey]}
                     </span>
                   )}
                 </span>
@@ -157,6 +184,7 @@ export function StudentShell({ user, stats, children }) {
           })}
         </div>
       </nav>
+      <PushPrompt audience="student" />
     </div>
   );
 }

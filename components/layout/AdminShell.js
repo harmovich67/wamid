@@ -14,6 +14,7 @@ import {
   ListChecks,
   Map,
   Megaphone,
+  MessagesSquare,
   Sparkles,
   Trophy,
   Users,
@@ -24,6 +25,8 @@ import { Avatar } from "@/components/ui/Avatar";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { UserMenu } from "./UserMenu";
 import { NotificationBell } from "./NotificationBell";
+import { PushPrompt } from "./PushPrompt";
+import { useLiveCounts } from "./useLiveCounts";
 import { cn } from "@/lib/utils";
 
 // Desktop sidebar groups
@@ -37,6 +40,7 @@ const GROUPS = [
     items: [
       { href: "/admin/students", label: "الطلاب والصلاحيات", icon: Users, color: "#38BDF8" },
       { href: "/admin/submissions", label: "التسليمات", icon: ClipboardCheck, badge: "pending", color: "#FF6B81" },
+      { href: "/admin/chats", label: "رسائل الطلاب", icon: MessagesSquare, badge: "chat", color: "#22C5A0" },
     ],
   },
   {
@@ -68,6 +72,7 @@ const MOBILE_MAIN_TABS = [
 
 // Additional tools in mobile "More" sheet
 const MORE_ROUTES = [
+  { href: "/admin/chats", label: "رسائل الطلاب", desc: "الدردشة الخاصة مع كل طالب والملفات المرسلة", icon: MessagesSquare, color: "#22C5A0", badge: "chat" },
   { href: "/admin/tasks", label: "المهام والتحديات", desc: "واجبات وتحديات برمجية للمستويات", icon: ListChecks, color: "#FFB547" },
   { href: "/admin/achievements", label: "الإنجازات والأوسمة", desc: "أوسمة ونقاط تميّز للطلاب", icon: Trophy, color: "#F472B6" },
   { href: "/admin/ai", label: "المساعد الذكي (AI)", desc: "إعدادات وتخصيص نموذج Gemini", icon: Bot, color: "#A78BFA" },
@@ -190,8 +195,9 @@ function DesktopSidebarContent({ pathname, counts, user, layoutId }) {
   );
 }
 
-export function AdminShell({ user, counts, children }) {
+export function AdminShell({ user, counts: initialCounts, children }) {
   const pathname = usePathname();
+  const counts = useLiveCounts(initialCounts);
   const [moreOpen, setMoreOpen] = useState(false);
   const current = ALL.find((i) => isActive(pathname, i));
   const isMoreActive = MORE_ROUTES.some((item) => isActive(pathname, item));
@@ -361,7 +367,7 @@ export function AdminShell({ user, counts, children }) {
               <Logo size={32} subtitle={false} />
             </Link>
             {current && (
-              <span className="flex min-w-0 items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-xs font-semibold shadow-xs">
+              <span className="flex min-w-0 items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-xs font-semibold shadow-xs max-[400px]:hidden">
                 <current.icon className="size-3.5 shrink-0" style={{ color: current.color }} />
                 <span className="truncate max-w-[130px]">{current.label}</span>
               </span>
@@ -382,7 +388,7 @@ export function AdminShell({ user, counts, children }) {
           </div>
 
           {/* Actions & User menu */}
-          <div className="ms-auto flex items-center gap-1.5 sm:gap-2">
+          <div className="ms-auto flex shrink-0 items-center gap-1 sm:gap-2">
             {counts.pending > 0 && (
               <Link
                 href="/admin/submissions"
@@ -393,7 +399,23 @@ export function AdminShell({ user, counts, children }) {
                 <span className="sm:hidden font-bold">{counts.pending}</span>
               </Link>
             )}
-            <NotificationBell initialUnread={counts.unread} allHref="/admin/inbox" />
+            <Link
+              href="/admin/chats"
+              className={cn(
+                "relative grid size-10 place-items-center rounded-xl transition-colors",
+                pathname.startsWith("/admin/chats") ? "bg-primary-soft text-primary" : "text-muted hover:bg-surface-2 hover:text-fg"
+              )}
+              aria-label={`رسائل الطلاب${counts.chat ? ` (${counts.chat} جديدة)` : ""}`}
+              title="رسائل الطلاب"
+            >
+              <MessagesSquare className="size-5" />
+              {counts.chat > 0 && (
+                <span className="absolute end-1 top-1 grid min-w-4 place-items-center rounded-full bg-coral px-1 text-[10px] font-bold leading-4 text-white ring-2 ring-bg">
+                  {counts.chat > 9 ? "9+" : counts.chat}
+                </span>
+              )}
+            </Link>
+            <NotificationBell initialUnread={initialCounts.unread} allHref="/admin/inbox" />
             <ThemeToggle className="hidden sm:grid" />
             <UserMenu user={user} subtitle="معلّم · مدير المنصة" />
           </div>
@@ -465,7 +487,7 @@ export function AdminShell({ user, counts, children }) {
               )}
             >
               <Layers className="size-5" />
-              {counts.unread > 0 && (
+              {(counts.unread > 0 || counts.chat > 0) && (
                 <span className="absolute -end-0.5 -top-0.5 size-2.5 rounded-full bg-coral ring-2 ring-surface" />
               )}
             </span>
@@ -475,6 +497,7 @@ export function AdminShell({ user, counts, children }) {
           </button>
         </div>
       </nav>
+      <PushPrompt audience="admin" />
     </div>
   );
 }

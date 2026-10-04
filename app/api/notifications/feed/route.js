@@ -1,11 +1,12 @@
 import { prisma } from "@/lib/db";
 import { handler } from "@/lib/api";
 import { announceUnlocks } from "@/lib/access";
+import { chatUnreadCount } from "@/lib/chat";
 
 // Polled by the header bell (every ~15s and when the tab regains focus).
 export const GET = handler({}, async ({ user }) => {
   if (user.role === "STUDENT") await announceUnlocks(user.id);
-  const [unread, items] = await Promise.all([
+  const [unread, items, chatUnread] = await Promise.all([
     prisma.notification.count({ where: { userId: user.id, readAt: null } }),
     prisma.notification.findMany({
       where: { userId: user.id },
@@ -13,6 +14,7 @@ export const GET = handler({}, async ({ user }) => {
       take: 8,
       select: { id: true, type: true, title: true, body: true, link: true, readAt: true, createdAt: true },
     }),
+    chatUnreadCount(user),
   ]);
-  return Response.json({ unread, items }, { headers: { "Cache-Control": "no-store" } });
+  return Response.json({ unread, items, chatUnread }, { headers: { "Cache-Control": "no-store" } });
 });

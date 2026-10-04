@@ -2,24 +2,45 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion, useAnimationControls } from "motion/react";
 import { toast } from "sonner";
-import { Bell, BellOff, CheckCheck, Volume2 } from "lucide-react";
+import { Bell, BellOff, BellRing, CheckCheck, Volume2 } from "lucide-react";
 import { NotificationIcon } from "@/components/shared/NotificationIcon";
 import { playChime, setSoundEnabled, soundEnabled } from "@/lib/sound";
 import { api } from "@/lib/client";
+import { disablePush, enablePush, permission as pushPermission, serverPushActive, showLocalNotification, syncPush } from "@/lib/push-client";
 import { cn, timeAgo } from "@/lib/utils";
 
 const POLL_MS = 15000;
 
+/** Broadcasts fresh counters to the shells (chat badge etc.) without a full router refresh. */
+export function publishCounts(detail) {
+  window.dispatchEvent(new CustomEvent("wameed:counts", { detail }));
+}
+
+/** Asks the bell to poll right now (e.g. after the chat marked messages as read). */
+export function refreshFeed() {
+  window.dispatchEvent(new Event("wameed:feed-refresh"));
+}
+
+/** Shares the browser-notification state between the bell and the permission prompt. */
+export function publishPushState(state) {
+  window.dispatchEvent(new CustomEvent("wameed:push-permission", { detail: state }));
+}
+
 /**
  * Live header bell: polls /api/notifications/feed every 15s (and on tab focus), shows a badge,
  * a dropdown with the latest items, and — when something new arrives — a toast, a chime and a shake.
+ * While the tab is in the background it raises a system notification instead (if allowed).
  */
 export function NotificationBell({ initialUnread = 0, allHref }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const here = useRef(pathname);
   const [open, setOpen] = useState(false);
+  // Notification permission ("default" | "granted" | "denied" | "unsupported"), or "on" when subscribed to Web Push.
+  const [browser, setBrowser] = useState("default");
   const [unread, setUnread] = useState(initialUnread);
   const [items, setItems] = useState(null);
   const [sound, setSound] = useState(soundEnabled);
@@ -34,25 +55,38 @@ export function NotificationBell({ initialUnread = 0, allHref }) {
       const data = await res.json();
       const newest = data.items[0]?.createdAt ?? null;
       if (seen.current !== null && newest && newest > seen.current) {
-        const fresh = data.items.filter((n) => n.createdAt > seen.current && !n.readAt);
+        // Skip what the user is already looking at (e.g. the chat thread that is open right now).
+        const fresh = data.items.filter((n) => n.createdAt > seen.current && !n.readAt && n.link !== here.current);
         if (fresh.length) {
-          playChime();
-          bell.start({ rotate: [0, -18, 16, -12, 8, 0], transition: { duration: 0.7 } });
           const n = fresh[0];
-          toast(n.title, {
-            description: fresh.length > 1 ? `و${fresh.length - 1} إشعارات أخرى` : n.body ?? undefined,
-            action: n.link ? { label: "فتح", onClick: () => router.push(n.link) } : undefined,
-            duration: 7000,
-          });
-          router.refresh();
+          const description = fresh.length > 1 ? `و${fresh.length - 1} إشعارات أخرى` : n.body ?? undefined;
+          if (document.visibilityState === "hidden") {
+            // Tab in the background: raise a system notification (unless Web Push already did).
+            if (!serverPushActive()) showLocalNotification({ title: n.title, body: description, link: n.link, tag: n.id });
+          } else {
+            playChime();
+            bell.start({ rotate: [0, -18, 16, -12, 8, 0], transition: { duration: 0.7 } });
+            toast(n.title, {
+              description,
+              action: n.link ? { label: "فتح", onClick: () => router.push(n.link) } : undefined,
+              duration: 7000,
+            });
+          }
+          // Chat messages only change counters (published below); everything else may change page data.
+          if (fresh.some((x) => x.type !== "MESSAGE")) router.refresh();
         }
       }
       if (newest && (seen.current === null || newest > seen.current)) seen.current = newest;
       if (seen.current === null) seen.current = "";
       setItems(data.items);
       setUnread(data.unread);
+      publishCounts({ unread: data.unread, chat: data.chatUnread ?? 0 });
     } catch {}
   }, [bell, router]);
+
+  useEffect(() => {
+    here.current = pathname;
+  }, [pathname]);
 
   useEffect(() => {
     // Initial fetch + polling: there is no synchronous value to derive this from during render.
@@ -61,11 +95,35 @@ export function NotificationBell({ initialUnread = 0, allHref }) {
     const timer = setInterval(() => document.visibilityState === "visible" && load(), POLL_MS);
     const onFocus = () => load();
     window.addEventListener("focus", onFocus);
+    window.addEventListener("wameed:feed-refresh", onFocus);
+    // From the service worker: a push arrived while this tab was focused, or a notification was clicked.
+    const onWorker = (e) => {
+      if (e.data?.type === "wameed:push") load();
+      if (e.data?.type === "wameed:navigate" && e.data.url) {
+        const url = new URL(e.data.url);
+        router.push(url.pathname + url.search);
+      }
+    };
+    navigator.serviceWorker?.addEventListener("message", onWorker);
     return () => {
       clearInterval(timer);
       window.removeEventListener("focus", onFocus);
+      window.removeEventListener("wameed:feed-refresh", onFocus);
+      navigator.serviceWorker?.removeEventListener("message", onWorker);
     };
-  }, [load]);
+  }, [load, router]);
+
+  useEffect(() => {
+    // The browser permission only exists on the client. When already granted, re-sync the
+    // subscription so it always points at the signed-in user.
+    const p = pushPermission();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setBrowser(p === "granted" && serverPushActive() ? "on" : p);
+    if (p === "granted") syncPush().then((ok) => ok && setBrowser("on")).catch(() => {});
+    const onChange = (e) => setBrowser(e.detail);
+    window.addEventListener("wameed:push-permission", onChange);
+    return () => window.removeEventListener("wameed:push-permission", onChange);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -88,6 +146,21 @@ export function NotificationBell({ initialUnread = 0, allHref }) {
       api("/api/notifications/read", { method: "POST", body: { ids: [n.id] } }).catch(() => {});
     }
     if (n.link) router.push(n.link);
+  }
+
+  async function toggleBrowser() {
+    if (browser === "on" || browser === "granted") {
+      await disablePush();
+      setBrowser("off");
+      publishPushState("off");
+      toast("أوقفنا إشعارات المتصفح على هذا الجهاز");
+      return;
+    }
+    const result = await enablePush();
+    const next = result === "granted" && serverPushActive() ? "on" : result;
+    setBrowser(next);
+    publishPushState(next);
+    if (result === "denied") toast.error("الإشعارات محظورة. اسمح بها من أيقونة القفل بجانب عنوان الموقع.");
   }
 
   function toggleSound() {
@@ -136,6 +209,22 @@ export function NotificationBell({ initialUnread = 0, allHref }) {
                 )}
               </div>
             </div>
+            {browser !== "unsupported" && browser !== "on" && browser !== "granted" && (
+              <button
+                onClick={toggleBrowser}
+                className="flex w-full items-center gap-3 border-b border-line bg-primary-soft/50 px-4 py-2.5 text-start transition hover:bg-primary-soft"
+              >
+                <BellRing className="size-5 shrink-0 text-primary" />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold text-primary">
+                    {browser === "denied" ? "الإشعارات محظورة في المتصفح" : "فعّل إشعارات المتصفح"}
+                  </span>
+                  <span className="block text-xs text-muted">
+                    {browser === "denied" ? "اسمح بها من إعدادات الموقع (أيقونة القفل) ثم أعد المحاولة." : "ليصلك كل جديد حتى لو كانت الصفحة مغلقة."}
+                  </span>
+                </span>
+              </button>
+            )}
             <div className="scrollbar-thin max-h-[60vh] overflow-y-auto p-1.5">
               {items === null && <div className="skeleton m-2 h-16 rounded-xl" />}
               {items?.length === 0 && <p className="px-4 py-10 text-center text-sm text-muted">لا إشعارات بعد 🔔</p>}
@@ -155,9 +244,16 @@ export function NotificationBell({ initialUnread = 0, allHref }) {
                 </button>
               ))}
             </div>
-            <Link href={allHref} onClick={() => setOpen(false)} className="block border-t border-line py-2.5 text-center text-sm font-medium text-primary hover:bg-surface-2">
-              عرض كل الإشعارات
-            </Link>
+            <div className="flex items-center border-t border-line">
+              <Link href={allHref} onClick={() => setOpen(false)} className="flex-1 py-2.5 text-center text-sm font-medium text-primary hover:bg-surface-2">
+                عرض كل الإشعارات
+              </Link>
+              {(browser === "on" || browser === "granted") && (
+                <button onClick={toggleBrowser} className="border-s border-line px-3 py-2.5 text-xs text-muted hover:bg-surface-2 hover:text-fg">
+                  إيقاف إشعارات المتصفح
+                </button>
+              )}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

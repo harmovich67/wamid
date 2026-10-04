@@ -1,4 +1,4 @@
-import { BookOpen, ListChecks, Megaphone, MessageCircle, MessageSquareText, RefreshCw, Smile, Trophy } from "lucide-react";
+import { BookOpen, ListChecks, Megaphone, MessageCircle, MessageSquareText, MessagesSquare, RefreshCw, Smile, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const NOTIFICATION_STYLES = {
@@ -11,6 +11,7 @@ export const NOTIFICATION_STYLES = {
   SYSTEM: { icon: Megaphone, cls: "bg-coral-soft text-coral" },
   REPLY: { icon: MessageCircle, cls: "bg-sky-soft text-sky" },
   REACTION: { icon: Smile, cls: "bg-amber-soft text-amber" },
+  MESSAGE: { icon: MessagesSquare, cls: "bg-primary-soft text-primary" },
 };
 
 export function NotificationIcon({ type, size = "md" }) {

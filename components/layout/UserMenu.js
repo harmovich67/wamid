@@ -7,6 +7,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { LogOut, UserRound } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { api } from "@/lib/client";
+import { disablePush } from "@/lib/push-client";
 
 export function UserMenu({ user, subtitle, profileHref }) {
   const [open, setOpen] = useState(false);
@@ -21,6 +22,8 @@ export function UserMenu({ user, subtitle, profileHref }) {
   }, [open]);
 
   async function logout() {
+    // Shared devices: stop this browser from receiving the previous user's notifications.
+    await disablePush().catch(() => {});
     await api("/api/auth/logout", { method: "POST" }).catch(() => {});
     router.replace("/login");
     router.refresh();

@@ -1,6 +1,7 @@
 import { Readex_Pro, JetBrains_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import { THEME_SCRIPT } from "@/components/ui/ThemeToggle";
+import { NavProgress } from "@/components/layout/NavProgress";
 import "./globals.css";
 
 const readex = Readex_Pro({
@@ -41,6 +42,7 @@ export default function RootLayout({ children }) {
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
       <body className="min-h-full" suppressHydrationWarning>
+        <NavProgress />
         {children}
         <Toaster position="top-center" dir="rtl" richColors closeButton toastOptions={{ style: { fontFamily: "var(--font-readex)" } }} />
       </body>

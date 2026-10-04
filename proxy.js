@@ -3,7 +3,7 @@ import { SESSION_COOKIE, verifySession } from "@/lib/session";
 
 // First gate only: redirects anonymous visitors and keeps students out of /admin.
 // Every page and API route re-checks the user against the database.
-const STUDENT_PATHS = ["/dashboard", "/roadmap", "/courses", "/lessons", "/tasks", "/achievements", "/assistant", "/notifications", "/profile", "/announcements"];
+const STUDENT_PATHS = ["/dashboard", "/roadmap", "/courses", "/lessons", "/tasks", "/achievements", "/assistant", "/notifications", "/profile", "/announcements", "/chat"];
 
 export async function proxy(request) {
   const { pathname } = request.nextUrl;
@@ -44,5 +44,6 @@ export const config = {
     "/notifications/:path*",
     "/profile/:path*",
     "/announcements/:path*",
+    "/chat/:path*",
   ],
 };

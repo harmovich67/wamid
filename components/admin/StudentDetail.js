@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ArrowRight, BookOpenCheck, ClipboardCheck, Flame, GraduationCap, KeyRound, LayoutDashboard, Medal, Settings, ShieldCheck, Trash2, Wand2, Zap } from "lucide-react";
+import { ArrowRight, BookOpenCheck, MessagesSquare, ClipboardCheck, Flame, GraduationCap, KeyRound, LayoutDashboard, Medal, Settings, ShieldCheck, Trash2, Wand2, Zap } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { AvatarPicker } from "@/components/ui/AvatarPicker";
 import { Badge } from "@/components/ui/Badge";
@@ -173,6 +173,40 @@ function AchievementsTab({ studentId, achievements, owned }) {
   );
 }
 
+/** The teacher decides whether this student can message them. */
+function ChatControl({ student }) {
+  const router = useRouter();
+  const [enabled, setEnabled] = useState(student.chatEnabled);
+  const [busy, setBusy] = useState(false);
+
+  async function toggle(next) {
+    setBusy(true);
+    try {
+      await api("/api/admin/chats", { method: "POST", body: { userIds: [student.id], enabled: next } });
+      setEnabled(next);
+      toast.success(next ? "فُتحت المراسلة — وصل الطالب إشعار بذلك" : "أُغلقت المراسلة لهذا الطالب");
+      router.refresh();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-2 sm:flex-col sm:items-stretch">
+      <div className="flex flex-1 items-center gap-3 rounded-2xl border border-line bg-bg px-3 py-2">
+        <MessagesSquare className="size-4 shrink-0 text-primary" />
+        <span className="flex-1 text-sm font-medium">{enabled ? "المراسلة مفتوحة" : "المراسلة مغلقة"}</span>
+        <Switch checked={enabled} disabled={busy} onChange={toggle} />
+      </div>
+      <Button href={`/admin/chats/${student.id}`} variant="soft" size="sm">
+        فتح المحادثة
+      </Button>
+    </div>
+  );
+}
+
 export function StudentDetail({ student, stats, courses, levels, tasks, rules, submissions, achievements, owned }) {
   const [tab, setTab] = useState("overview");
 
@@ -196,6 +230,7 @@ export function StudentDetail({ student, stats, courses, levels, tasks, rules, s
             <span>آخر دخول: {student.lastLoginAt ? timeAgo(student.lastLoginAt) : "لم يدخل بعد"}</span>
           </div>
         </div>
+        <ChatControl student={student} />
       </div>
 
       <Tabs
