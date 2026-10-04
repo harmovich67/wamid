@@ -32,11 +32,11 @@ export function CardHeader({ title, subtitle, action, icon, className }) {
 
 export function PageHeader({ title, subtitle, action, eyebrow }) {
   return (
-    <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div className="mb-4 flex flex-col gap-2.5 sm:mb-6 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
       <div className="min-w-0">
-        {eyebrow && <div className="mb-1 text-sm font-medium text-primary">{eyebrow}</div>}
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{title}</h1>
-        {subtitle && <p className="mt-1.5 max-w-2xl text-muted">{subtitle}</p>}
+        {eyebrow && <div className="mb-1 text-xs font-medium text-primary sm:text-sm">{eyebrow}</div>}
+        <h1 className="text-xl font-bold tracking-tight text-fg sm:text-3xl">{title}</h1>
+        {subtitle && <p className="mt-1 max-w-2xl text-xs text-muted leading-relaxed sm:mt-1.5 sm:text-sm">{subtitle}</p>}
       </div>
       {action && <div className="flex flex-wrap items-center gap-2">{action}</div>}
     </div>

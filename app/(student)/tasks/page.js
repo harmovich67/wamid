@@ -32,21 +32,23 @@ export default async function TasksPage() {
   const grouped = Object.groupBy(tasks, groupOf);
 
   return (
-    <div>
+    <div className="space-y-6 sm:space-y-8">
       <PageHeader title="مهامي" subtitle="الواجبات والتحديات والمشاريع التي كلّفك بها معلّمك." />
       {tasks.length === 0 ? (
         <EmptyState icon={ListChecks} title="لا توجد مهام بعد" description="عندما يكلّفك معلّمك بمهمة ستظهر هنا مع إشعار." />
       ) : (
-        <div className="space-y-8">
+        <div className="space-y-6 sm:space-y-8">
           {GROUPS.filter((g) => grouped[g.key]?.length).map((g, i) => (
             <FadeIn key={g.key} delay={i * 0.05}>
               <section>
-                <h2 className="mb-3 flex items-center gap-2 font-semibold">
-                  <g.icon className={`size-5 ${g.tone}`} />
+                <h2 className="mb-2.5 flex items-center gap-2 text-sm font-bold text-fg sm:mb-3 sm:text-base">
+                  <g.icon className={`size-4 sm:size-5 ${g.tone}`} />
                   {g.title}
-                  <span className="rounded-full bg-surface-2 px-2 text-xs text-muted">{formatNumber(grouped[g.key].length)}</span>
+                  <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[11px] font-semibold text-muted sm:text-xs">
+                    {formatNumber(grouped[g.key].length)}
+                  </span>
                 </h2>
-                <div className="grid gap-2.5 lg:grid-cols-2">
+                <div className="grid gap-2 sm:gap-2.5 lg:grid-cols-2">
                   {grouped[g.key].map((t) => (
                     <TaskRow key={t.id} task={t} />
                   ))}

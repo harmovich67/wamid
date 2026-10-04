@@ -87,19 +87,25 @@ export function StudentShell({ user, stats, children }) {
       </aside>
 
       {/* Top bar */}
-      <header className="sticky top-0 z-20 border-b border-line bg-bg/80 backdrop-blur-xl lg:ms-64">
-        <div className="mx-auto flex h-16 max-w-6xl items-center gap-2 px-4 sm:px-6">
-          <Link href="/dashboard" className="lg:hidden">
-            <Logo size={34} subtitle={false} />
+      <header className="sticky top-0 z-20 border-b border-line bg-bg/85 backdrop-blur-xl lg:ms-64">
+        <div className="mx-auto flex h-14 sm:h-16 max-w-6xl items-center justify-between gap-1.5 px-3.5 sm:px-6">
+          <Link href="/dashboard" className="shrink-0 lg:hidden">
+            <Logo size={28} subtitle={false} />
           </Link>
-          <div className="ms-auto flex items-center gap-1.5 sm:gap-2">
-            <div className="flex items-center gap-1 rounded-full bg-amber-soft px-2.5 py-1.5 text-sm font-semibold text-[#b86e00] dark:text-amber" title="أيام متتالية">
-              <Flame className={cn("size-4", stats.streak > 0 && "fill-current")} />
-              {formatNumber(stats.streak)}
+          <div className="ms-auto flex items-center gap-1 sm:gap-2">
+            <div
+              className="flex items-center gap-1 rounded-full bg-amber-soft px-2 py-1 text-xs font-semibold text-[#b86e00] sm:px-2.5 sm:py-1.5 sm:text-sm dark:text-amber"
+              title="أيام متتالية"
+            >
+              <Flame className={cn("size-3.5 sm:size-4", stats.streak > 0 && "fill-current")} />
+              <span>{formatNumber(stats.streak)}</span>
             </div>
-            <div className="flex items-center gap-1 rounded-full bg-primary-soft px-2.5 py-1.5 text-sm font-semibold text-primary" title="نقاط الخبرة">
-              <Zap className="size-4 fill-current" />
-              {formatNumber(stats.xp)}
+            <div
+              className="flex items-center gap-1 rounded-full bg-primary-soft px-2 py-1 text-xs font-semibold text-primary sm:px-2.5 sm:py-1.5 sm:text-sm"
+              title="نقاط الخبرة"
+            >
+              <Zap className="size-3.5 fill-current sm:size-4" />
+              <span>{formatNumber(stats.xp)}</span>
             </div>
             <NotificationBell initialUnread={stats.unread} allHref="/notifications" />
             <ThemeToggle className="hidden sm:grid" />
@@ -108,25 +114,44 @@ export function StudentShell({ user, stats, children }) {
         </div>
       </header>
 
-      <main className="pb-28 lg:ms-64 lg:pb-12">
-        <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">{children}</div>
+      <main className="min-w-0 flex-1 pb-24 sm:pb-28 lg:ms-64 lg:pb-12">
+        <div className="mx-auto max-w-6xl min-w-0 px-3.5 py-4 sm:px-6 sm:py-8">{children}</div>
       </main>
 
       {/* Mobile bottom navigation */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
-        <div className="mx-auto flex max-w-lg items-stretch justify-around px-2">
+      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden shadow-[0_-4px_24px_rgba(0,0,0,0.06)]">
+        <div className="mx-auto flex max-w-lg items-stretch justify-around px-1 py-1">
           {nav.map((item) => {
             const active = isActive(pathname, item);
             return (
-              <Link key={item.href} href={item.href} className="relative flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-medium">
-                {active && <motion.span layoutId="student-tab" className="absolute top-0 h-1 w-10 rounded-b-full bg-primary" />}
-                <span className={cn("relative grid size-9 place-items-center rounded-2xl transition-colors", active ? "bg-primary-soft text-primary" : "text-muted")}>
-                  <item.icon className="size-5" />
+              <Link
+                key={item.href}
+                href={item.href}
+                className="relative flex flex-1 flex-col items-center gap-0.5 py-1 text-[10.5px] font-medium transition-transform active:scale-95"
+              >
+                {active && (
+                  <motion.span
+                    layoutId="student-tab"
+                    className="absolute top-0 h-1 w-8 sm:w-10 rounded-b-full bg-primary"
+                    transition={{ type: "spring", damping: 30, stiffness: 400 }}
+                  />
+                )}
+                <span
+                  className={cn(
+                    "relative grid size-8 sm:size-9 place-items-center rounded-xl transition-colors",
+                    active ? "bg-primary-soft text-primary font-bold" : "text-muted hover:text-fg"
+                  )}
+                >
+                  <item.icon className="size-4.5 sm:size-5" style={active ? { color: item.color } : undefined} />
                   {item.badgeKey && stats.pendingTasks > 0 && (
-                    <span className="absolute -end-1 -top-1 grid min-w-4 place-items-center rounded-full bg-coral px-1 text-[10px] leading-4 text-white">{stats.pendingTasks}</span>
+                    <span className="absolute -end-1 -top-1 grid min-w-4 place-items-center rounded-full bg-coral px-1 text-[9.5px] font-bold leading-3.5 text-white shadow-xs">
+                      {stats.pendingTasks}
+                    </span>
                   )}
                 </span>
-                <span className={active ? "text-primary" : "text-muted"}>{item.label}</span>
+                <span className={cn("truncate max-w-[62px] text-[10.5px] leading-tight font-medium", active ? "font-bold text-primary" : "text-muted")}>
+                  {item.label}
+                </span>
               </Link>
             );
           })}
