@@ -167,7 +167,6 @@ async function main() {
   await prisma.accessRule.createMany({
     data: [
       { userId: lina.id, resourceType: "COURSE", resourceId: world.id, effect: "ALLOW" },
-      { userId: lina.id, resourceType: "LESSON", resourceId: world.lessons[3].id, effect: "DENY" },
       { userId: lina.id, resourceType: "COURSE", resourceId: problem.id, effect: "ALLOW", availableFrom: new Date(Date.now() + 3 * DAY) },
       { userId: lina.id, resourceType: "TASK", resourceId: taskRows["تحدي الأسبوع: اكتشف النمط 🧩"].id, effect: "ALLOW" },
     ],
