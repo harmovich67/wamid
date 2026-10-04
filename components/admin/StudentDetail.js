@@ -266,7 +266,7 @@ export function StudentDetail({ student, stats, courses, levels, tasks, rules, s
               <div className="grid gap-3 md:grid-cols-2">
                 {courses.map((c) => (
                   <div key={c.id} className="flex items-center gap-3 rounded-2xl bg-surface-2/60 p-3">
-                    <div className="grid size-11 place-items-center rounded-xl text-white" style={{ background: c.color }}>
+                    <div className="grid size-11 shrink-0 place-items-center rounded-xl text-white" style={{ background: c.color }}>
                       <Icon name={c.icon} className="size-5" />
                     </div>
                     <div className="min-w-0 flex-1">

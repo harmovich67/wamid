@@ -184,22 +184,22 @@ export function CurriculumManager({ levels }) {
       ) : (
         <div className="space-y-6">
           {levels.map((level, li) => (
-            <section key={level.id} className="rounded-3xl border border-line bg-surface p-5 shadow-card">
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="grid size-12 place-items-center rounded-2xl text-white" style={{ background: level.color }}>
+            <section key={level.id} className="rounded-3xl border border-line bg-surface p-4 shadow-card sm:p-5">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-3">
+                <div className="grid size-12 shrink-0 place-items-center rounded-2xl text-white" style={{ background: level.color }}>
                   <Icon name={level.icon} className="size-6" />
                 </div>
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-1 basis-40">
                   <div className="text-xs font-medium" style={{ color: level.color }}>المستوى {formatNumber(li + 1)}</div>
                   <h2 className="text-lg font-bold">{level.title}</h2>
                   {level.subtitle && <p className="text-sm text-muted">{level.subtitle}</p>}
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex w-full items-center gap-1 border-t border-line pt-3 sm:w-auto sm:border-0 sm:pt-0">
                   <Button variant="ghost" size="icon-sm" onClick={() => move("level", levels, li, -1)} disabled={li === 0} aria-label="أعلى"><ArrowUp className="size-4" /></Button>
                   <Button variant="ghost" size="icon-sm" onClick={() => move("level", levels, li, 1)} disabled={li === levels.length - 1} aria-label="أسفل"><ArrowDown className="size-4" /></Button>
                   <Button variant="ghost" size="icon-sm" onClick={() => setLevelModal(level)} aria-label="تعديل"><Pencil className="size-4" /></Button>
                   <Button variant="ghost" size="icon-sm" onClick={() => setConfirm(level)} aria-label="حذف"><Trash2 className="size-4 text-coral" /></Button>
-                  <Button variant="soft" size="sm" onClick={() => setCourseModal(level.id)}>
+                  <Button variant="soft" size="sm" className="ms-auto sm:ms-1" onClick={() => setCourseModal(level.id)}>
                     <Plus className="size-4" /> دورة
                   </Button>
                 </div>

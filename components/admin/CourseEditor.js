@@ -79,26 +79,28 @@ function ModuleCard({ mod, index, count, onMove, courseId }) {
 
   return (
     <section className="rounded-3xl border border-line bg-surface shadow-card">
-      <div className="flex items-center gap-2 border-b border-line p-4">
-        <span className="grid size-8 place-items-center rounded-lg bg-surface-2 text-sm font-bold text-muted">{formatNumber(index + 1)}</span>
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-2 border-b border-line p-3 sm:p-4">
+        <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-surface-2 text-sm font-bold text-muted">{formatNumber(index + 1)}</span>
         {editing ? (
-          <div className="flex flex-1 gap-2">
+          <div className="flex min-w-0 flex-1 basis-40 gap-2">
             <Input value={title} onChange={(e) => setTitle(e.target.value)} className="h-9" autoFocus />
             <Button size="icon-sm" onClick={rename} aria-label="حفظ"><Check className="size-4" /></Button>
             <Button size="icon-sm" variant="ghost" onClick={() => { setEditing(false); setTitle(mod.title); }} aria-label="إلغاء"><X className="size-4" /></Button>
           </div>
         ) : (
-          <h3 className="flex-1 font-semibold">{mod.title}</h3>
+          <h3 className="min-w-0 flex-1 basis-32 font-semibold">{mod.title}</h3>
         )}
-        <Button variant="ghost" size="icon-sm" onClick={() => onMove(index, -1)} disabled={index === 0} aria-label="أعلى"><ArrowUp className="size-4" /></Button>
-        <Button variant="ghost" size="icon-sm" onClick={() => onMove(index, 1)} disabled={index === count - 1} aria-label="أسفل"><ArrowDown className="size-4" /></Button>
-        <Button variant="ghost" size="icon-sm" onClick={() => setEditing(true)} aria-label="إعادة تسمية"><Pencil className="size-4" /></Button>
-        <Button variant="ghost" size="icon-sm" onClick={remove} aria-label="حذف"><Trash2 className="size-4 text-coral" /></Button>
+        <div className="ms-auto flex shrink-0 items-center gap-0.5">
+          <Button variant="ghost" size="icon-sm" onClick={() => onMove(index, -1)} disabled={index === 0} aria-label="أعلى"><ArrowUp className="size-4" /></Button>
+          <Button variant="ghost" size="icon-sm" onClick={() => onMove(index, 1)} disabled={index === count - 1} aria-label="أسفل"><ArrowDown className="size-4" /></Button>
+          <Button variant="ghost" size="icon-sm" onClick={() => setEditing(true)} aria-label="إعادة تسمية"><Pencil className="size-4" /></Button>
+          <Button variant="ghost" size="icon-sm" onClick={remove} aria-label="حذف"><Trash2 className="size-4 text-coral" /></Button>
+        </div>
       </div>
       <div className="divide-y divide-line">
         {mod.lessons.map((lesson, i) => (
-          <div key={lesson.id} className="flex items-center gap-3 px-4 py-3">
-            <div className="flex flex-col">
+          <div key={lesson.id} className="flex items-center gap-2 px-3 py-3 sm:gap-3 sm:px-4">
+            <div className="flex shrink-0 flex-col">
               <button onClick={() => moveLesson(i, -1)} disabled={i === 0} className="text-muted hover:text-fg disabled:opacity-30" aria-label="أعلى"><ArrowUp className="size-3.5" /></button>
               <button onClick={() => moveLesson(i, 1)} disabled={i === mod.lessons.length - 1} className="text-muted hover:text-fg disabled:opacity-30" aria-label="أسفل"><ArrowDown className="size-3.5" /></button>
             </div>
@@ -111,8 +113,8 @@ function ModuleCard({ mod, index, count, onMove, courseId }) {
                 <span className="flex items-center gap-0.5"><Users className="size-3" /> {formatNumber(lesson.completions)} أكملوه</span>
               </div>
             </Link>
-            <Button href={`/admin/lessons/${lesson.id}`} variant="secondary" size="xs"><Pencil className="size-3.5" /> تحرير</Button>
-            <Button variant="ghost" size="icon-sm" onClick={() => removeLesson(lesson)} aria-label="حذف"><Trash2 className="size-4 text-coral" /></Button>
+            <Button href={`/admin/lessons/${lesson.id}`} variant="secondary" size="xs" className="shrink-0" aria-label="تحرير"><Pencil className="size-3.5" /> <span className="max-sm:hidden">تحرير</span></Button>
+            <Button variant="ghost" size="icon-sm" className="shrink-0" onClick={() => removeLesson(lesson)} aria-label="حذف"><Trash2 className="size-4 text-coral" /></Button>
           </div>
         ))}
         <form onSubmit={addLesson} className="flex gap-2 p-3">
@@ -186,13 +188,13 @@ export function CourseEditor({ course, modules, levels }) {
         <ArrowRight className="size-4" /> المسار والدورات
       </Link>
 
-      <div className="flex flex-wrap items-center gap-4">
-        <div className="grid size-14 place-items-center rounded-2xl text-white" style={{ background: form.color }}>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+        <div className="grid size-14 shrink-0 place-items-center rounded-2xl text-white" style={{ background: form.color }}>
           <Icon name={form.icon} className="size-7" />
         </div>
-        <div className="min-w-0 flex-1">
-          <h1 className="text-2xl font-bold">{course.title}</h1>
-          <div className="mt-1 flex gap-2">
+        <div className="min-w-0 flex-1 basis-40">
+          <h1 className="text-xl font-bold sm:text-2xl">{course.title}</h1>
+          <div className="mt-1 flex flex-wrap gap-2">
             {course.isPublished ? <Badge tone="mint">منشورة</Badge> : <Badge tone="amber">مسودة — لا يراها الطلاب</Badge>}
           </div>
         </div>
