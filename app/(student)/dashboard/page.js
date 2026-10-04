@@ -67,57 +67,81 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Hero */}
+      {/* Hero */}
       <FadeIn>
-        <section className="relative overflow-hidden rounded-[2rem] bg-[#15102e] p-6 text-white sm:p-8">
+        <section className="relative overflow-hidden rounded-[2rem] bg-[#15102e] p-5 text-white sm:p-8">
           <div className="bg-grid absolute inset-0 opacity-[0.08]" />
           <div className="absolute -top-24 -start-16 size-72 rounded-full bg-primary/50 blur-[90px]" />
           <div className="absolute -bottom-24 end-10 size-60 rounded-full bg-amber/30 blur-[90px]" />
           <div className="relative flex flex-col gap-6 md:flex-row md:items-center">
-            <div className="flex-1">
-              <div className="text-white/70">{greeting()}،</div>
-              <h1 className="mt-1 text-3xl font-bold sm:text-4xl">{firstName} 👋</h1>
-              <p className="mt-2 max-w-lg text-white/70">
+            <div className="flex-1 min-w-0">
+              <div className="text-xs text-white/70 sm:text-sm">{greeting()}،</div>
+              <h1 className="mt-1 text-2xl font-bold sm:text-4xl">{firstName} 👋</h1>
+              <p className="mt-2 max-w-lg text-xs leading-relaxed text-white/70 sm:text-sm">
                 {stats.streak > 0
                   ? `سلسلتك ${formatNumber(stats.streak)} ${stats.streak === 1 ? "يوم" : "أيام"} متتالية 🔥 لا تكسرها اليوم!`
                   : "كل يوم خطوة صغيرة تصنع مبرمجًا كبيرًا. ابدأ سلسلتك اليوم!"}
               </p>
-              <div className="mt-6 flex flex-wrap gap-3">
+              <div className="mt-5 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:gap-3">
                 {next ? (
-                  <Button href={`/lessons/${next.nextLesson.id}`} variant="amber" size="lg">
-                    <Play className="size-5 fill-current" />
-                    أكمل: {next.nextLesson.title}
+                  <Button
+                    href={`/lessons/${next.nextLesson.id}`}
+                    variant="amber"
+                    size="lg"
+                    className="w-full sm:w-auto min-w-0 max-w-full justify-center font-bold shadow-lg shadow-amber/20"
+                  >
+                    <Play className="size-4.5 sm:size-5 shrink-0 fill-current" />
+                    <span className="truncate">
+                      أكمل: {next.nextLesson.title}
+                    </span>
                   </Button>
                 ) : (
-                  <Button href="/roadmap" variant="amber" size="lg">
-                    <Sparkles className="size-5" /> استكشف المسار
+                  <Button href="/roadmap" variant="amber" size="lg" className="w-full sm:w-auto min-w-0 max-w-full justify-center">
+                    <Sparkles className="size-5 shrink-0" /> استكشف المسار
                   </Button>
                 )}
-                <Button href="/tasks" size="lg" className="border border-white/15 bg-white/10 text-white shadow-none hover:bg-white/15">
-                  <ListChecks className="size-5" /> مهامي
+                <Button
+                  href="/tasks"
+                  size="lg"
+                  className="w-full sm:w-auto min-w-0 max-w-full justify-center border border-white/15 bg-white/10 text-white shadow-none hover:bg-white/15"
+                >
+                  <ListChecks className="size-4.5 sm:size-5 shrink-0" /> مهامي
                 </Button>
               </div>
             </div>
-            <div className="flex items-center gap-5 rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur">
-              <ProgressRing value={stats.rank.progress} size={96} stroke={9} color="var(--amber)">
-                <LogoMark size={40} animated />
-              </ProgressRing>
-              <div>
-                <div className="text-sm text-white/60">رتبتك الحالية</div>
-                <div className="text-2xl font-bold">{stats.rank.current.title}</div>
-                <div className="mt-1 flex items-center gap-1 text-sm text-amber">
-                  <Zap className="size-4 fill-current" /> {formatNumber(stats.xp)} XP
+
+            {/* Rank & Weekly Activity Card */}
+            <div className="flex flex-col gap-3.5 rounded-3xl border border-white/10 bg-white/5 p-4 sm:p-5 backdrop-blur w-full md:w-auto md:min-w-[320px]">
+              <div className="flex items-center gap-3.5 sm:gap-4">
+                <ProgressRing value={stats.rank.progress} size={74} stroke={7} color="var(--amber)" className="shrink-0">
+                  <LogoMark size={32} animated />
+                </ProgressRing>
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs text-white/60">رتبتك الحالية</div>
+                  <div className="text-xl font-bold truncate">{stats.rank.current.title}</div>
+                  <div className="mt-0.5 flex items-center gap-1 text-xs sm:text-sm font-semibold text-amber">
+                    <Zap className="size-3.5 fill-current" /> {formatNumber(stats.xp)} XP
+                  </div>
+                  <div className="mt-0.5 text-[11px] text-white/60 truncate">
+                    {stats.rank.next ? `${formatNumber(stats.rank.toNext)} XP للوصول إلى ${stats.rank.next.title}` : "أعلى رتبة 🌌"}
+                  </div>
                 </div>
-                <div className="mt-1 text-xs text-white/60">
-                  {stats.rank.next ? `${formatNumber(stats.rank.toNext)} XP للوصول إلى ${stats.rank.next.title}` : "أعلى رتبة 🌌"}
+              </div>
+
+              {/* 7-Day Activity Row */}
+              <div className="border-t border-white/10 pt-3">
+                <div className="mb-2 flex items-center justify-between text-[11px] text-white/60">
+                  <span>نشاطك خلال الأسبوع</span>
+                  {stats.streak > 0 && <span className="font-semibold text-amber">🔥 {formatNumber(stats.streak)} يوم</span>}
                 </div>
-                <div className="mt-3 flex gap-1.5" aria-label="نشاطك خلال آخر 7 أيام">
+                <div className="flex items-center justify-between gap-1" aria-label="نشاطك خلال آخر 7 أيام">
                   {week.map((d) => (
-                    <div key={d.key} className="flex flex-col items-center gap-1">
+                    <div key={d.key} className="flex flex-1 flex-col items-center gap-1">
                       <span
                         className={cn(
-                          "grid size-6 place-items-center rounded-full text-[11px]",
-                          d.active ? "bg-amber text-[#3a2400]" : "bg-white/10 text-white/40",
-                          d.today && "ring-2 ring-white/60"
+                          "grid size-6 sm:size-7 place-items-center rounded-full text-[11px] transition-all",
+                          d.active ? "bg-amber text-[#3a2400] font-bold shadow-xs shadow-amber/40" : "bg-white/10 text-white/40",
+                          d.today && "ring-2 ring-white/70"
                         )}
                         title={d.active ? "تعلّمت في هذا اليوم" : "لا نشاط"}
                       >

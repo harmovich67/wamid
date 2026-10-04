@@ -24,7 +24,7 @@ const SIZES = {
 
 export function buttonClass({ variant = "primary", size = "md", className } = {}) {
   return cn(
-    "inline-flex shrink-0 select-none items-center justify-center font-medium whitespace-nowrap transition-all duration-150 disabled:pointer-events-none disabled:opacity-50",
+    "inline-flex select-none items-center justify-center font-medium whitespace-nowrap transition-all duration-150 disabled:pointer-events-none disabled:opacity-50",
     VARIANTS[variant],
     SIZES[size],
     className
