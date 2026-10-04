@@ -26,16 +26,20 @@ export function TaskRow({ task, compact }) {
   return (
     <Link
       href={`/tasks/${task.id}`}
-      className="group flex items-center gap-2.5 rounded-2xl border border-line bg-surface p-3 transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-card active:scale-[0.99] sm:gap-3.5 sm:p-4"
+      className="group flex items-center gap-2.5 rounded-2xl border border-line bg-surface p-3 transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-card active:scale-[0.99] sm:gap-3.5 sm:p-3.5"
     >
-      <div className={cn("grid size-10 shrink-0 place-items-center rounded-xl text-xs font-bold sm:size-11", TYPE_STYLES[task.type])}>
+      <div className={cn("grid size-9 shrink-0 place-items-center rounded-xl text-[11px] font-bold sm:size-10 sm:text-xs", TYPE_STYLES[task.type])}>
         {TASK_TYPES[task.type]}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-semibold text-fg sm:text-base">{task.title}</div>
-        <div className="mt-1 flex flex-wrap items-center gap-1 text-[11px] sm:gap-1.5 sm:text-xs">
+        <div className="line-clamp-1 text-sm font-semibold text-fg sm:text-[15px]">{task.title}</div>
+        <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs">
           <Badge tone={DIFFICULTY_TONES[task.difficulty]}>{TASK_DIFFICULTIES[task.difficulty]}</Badge>
           {!compact && task.course && <Badge tone="gray">{task.course.title}</Badge>}
+          <span className="inline-flex items-center gap-0.5 rounded-md bg-amber-soft px-1.5 py-0.5 text-[11px] font-bold text-[#b86e00] dark:text-amber">
+            <Zap className="size-3 fill-current" />
+            {formatNumber(task.points)} XP
+          </span>
           {status ? (
             <Badge tone={SUBMISSION_TONES[status]}>{SUBMISSION_STATUSES[status]}</Badge>
           ) : (
@@ -47,12 +51,8 @@ export function TaskRow({ task, compact }) {
           )}
         </div>
       </div>
-      <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-        <span className="flex items-center gap-0.5 rounded-lg bg-primary-soft/70 px-2 py-0.5 text-xs font-bold text-primary sm:bg-transparent sm:px-0 sm:py-0 sm:text-sm">
-          <Zap className="size-3.5 fill-current sm:size-4" />
-          {formatNumber(task.points)}
-        </span>
-        <ChevronLeft className="size-4 text-muted transition-transform group-hover:-translate-x-1 sm:size-5" />
+      <div className="flex shrink-0 items-center justify-center ps-1">
+        <ChevronLeft className="size-4.5 text-muted/60 transition-transform group-hover:-translate-x-1 group-hover:text-primary sm:size-5" />
       </div>
     </Link>
   );

@@ -165,7 +165,7 @@ export default async function DashboardPage() {
                   </Link>
                 }
               />
-              <div className="grid gap-3 p-5">
+              <div className="grid gap-3 p-3.5 sm:p-5">
                 {active.length === 0 ? (
                   <EmptyState
                     icon={Sparkles}
@@ -177,10 +177,10 @@ export default async function DashboardPage() {
                     <Link
                       key={course.id}
                       href={`/courses/${course.id}`}
-                      className="group flex items-center gap-4 rounded-2xl border border-line p-4 transition-all hover:border-primary/40 hover:bg-surface-2/50"
+                      className="group flex items-center gap-3 rounded-2xl border border-line p-3 transition-all hover:border-primary/40 hover:bg-surface-2/50 sm:gap-4 sm:p-4"
                     >
-                      <div className="grid size-14 shrink-0 place-items-center rounded-2xl text-white" style={{ background: course.color }}>
-                        <Icon name={course.icon} className="size-7" />
+                      <div className="grid size-12 shrink-0 place-items-center rounded-2xl text-white sm:size-14" style={{ background: course.color }}>
+                        <Icon name={course.icon} className="size-6 sm:size-7" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
@@ -213,7 +213,7 @@ export default async function DashboardPage() {
                   </Link>
                 }
               />
-              <div className="grid gap-2.5 p-5">
+              <div className="grid gap-2.5 p-3.5 sm:p-5">
                 {pending.length === 0 ? (
                   <EmptyState icon={ListChecks} title="لا مهام معلّقة 🎉" description="استمتع بوقتك أو راجع دروسك السابقة." />
                 ) : (
@@ -229,7 +229,7 @@ export default async function DashboardPage() {
           <FadeIn delay={0.12}>
             <Card className="overflow-hidden">
               <CardHeader title="تحديات قادمة" icon={<div className="grid size-10 place-items-center rounded-xl bg-amber-soft text-amber"><Swords className="size-5" /></div>} />
-              <div className="space-y-2.5 p-5">
+              <div className="space-y-2.5 p-3.5 sm:p-5">
                 {challenges.length === 0 ? (
                   <p className="py-4 text-center text-sm text-muted">لا تحديات حاليًا — ترقّب!</p>
                 ) : (
