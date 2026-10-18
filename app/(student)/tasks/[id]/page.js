@@ -43,7 +43,7 @@ export default async function TaskPage({ params }) {
         <ArrowRight className="size-4" /> مهامي
       </Link>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="min-w-0 space-y-6">
           <header className="rounded-[2rem] border border-line bg-surface p-6 shadow-card sm:p-8">
             <div className="flex flex-wrap gap-2">

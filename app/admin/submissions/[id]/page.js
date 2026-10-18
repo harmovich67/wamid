@@ -38,7 +38,7 @@ export default async function SubmissionReviewPage({ params }) {
         <ArrowRight className="size-4" /> التسليمات
       </Link>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
         <div className="min-w-0 space-y-5">
           <div className="flex flex-wrap items-center gap-3 rounded-3xl border border-line bg-surface p-5 shadow-card">
             <Avatar name={s.student.name} color={s.student.avatarColor} size={48} />
