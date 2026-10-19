@@ -1,5 +1,5 @@
 import { Bot } from "lucide-react";
-import { requireStudent } from "@/lib/auth";
+import { getSessionUserId, requireStudent } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getAISettings, resolveApiKey } from "@/lib/ai";
 import { getLessonAccess, canAccessTask } from "@/lib/access";
@@ -10,8 +10,13 @@ export const metadata = { title: "ومضة AI" };
 
 export default async function AssistantPage({ searchParams }) {
   const { lesson: lessonId, task: taskId, mode } = await searchParams;
-  const user = await requireStudent();
-  const settings = await getAISettings();
+  const [user, settings, conversations] = await Promise.all([
+    requireStudent(),
+    getAISettings(),
+    getSessionUserId().then((userId) =>
+      prisma.aIConversation.findMany({ where: { userId }, orderBy: { updatedAt: "desc" }, take: 30, select: { id: true, title: true, updatedAt: true } })
+    ),
+  ]);
 
   if (!settings.enabled || !user.student?.aiEnabled) {
     return <EmptyState icon={Bot} title="المساعد الذكي غير متاح" description="فعّل المعلّم المساعد لاحقًا وسيظهر هنا." />;
@@ -25,13 +30,6 @@ export default async function AssistantPage({ searchParams }) {
     const task = await canAccessTask(user.id, taskId);
     if (task) context = { taskId, label: `مهمة: ${task.title}` };
   }
-
-  const conversations = await prisma.aIConversation.findMany({
-    where: { userId: user.id },
-    orderBy: { updatedAt: "desc" },
-    take: 30,
-    select: { id: true, title: true, updatedAt: true },
-  });
 
   return (
     <AssistantChat

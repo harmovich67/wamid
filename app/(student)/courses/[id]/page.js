@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowRight, BookOpen, Clock, Lock, Timer, Zap } from "lucide-react";
-import { requireStudent } from "@/lib/auth";
-import { getTasks, getTree } from "@/lib/student-data";
+import { getTasks, getTree, requireStudentWithData } from "@/lib/student-data";
 import { Icon } from "@/components/ui/Icon";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -16,7 +15,7 @@ import { cn, formatNumber } from "@/lib/utils";
 
 export default async function CoursePage({ params }) {
   const { id } = await params;
-  const user = await requireStudent();
+  const user = await requireStudentWithData();
   const [tree, tasks] = await Promise.all([getTree(user.id), getTasks(user.id)]);
 
   let course = null;

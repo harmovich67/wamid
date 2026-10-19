@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-const POLL_MS = 10000;
+const POLL_MS = 20000;
 
 /**
  * While a student has this lesson open, silently pulls in teacher edits: polls the lesson's

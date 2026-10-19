@@ -19,21 +19,26 @@ const FILTERS = [
 ];
 
 export default async function SubmissionsPage({ searchParams }) {
-  await requireAdmin();
-  const { status = "SUBMITTED" } = await searchParams;
+  const [, { status = "SUBMITTED" }] = await Promise.all([requireAdmin(), searchParams]);
   const filter = FILTERS.some((f) => f.value === status) ? status : "SUBMITTED";
-  const [items, counts] = await Promise.all([
+  // Students and tasks are small tables: loading them alongside the submissions avoids a chain of includes.
+  const [rows, counts, students, taskRows] = await Promise.all([
     prisma.submission.findMany({
       where: filter === "all" ? {} : { status: filter },
       orderBy: { submittedAt: filter === "SUBMITTED" ? "asc" : "desc" },
       take: 200,
-      include: {
-        student: { select: { name: true, avatarColor: true } },
-        task: { select: { title: true, type: true } },
-      },
     }),
     prisma.submission.groupBy({ by: ["status"], _count: { _all: true } }),
+    prisma.user.findMany({ where: { role: "STUDENT" }, select: { id: true, name: true, avatarColor: true } }),
+    prisma.task.findMany({ select: { id: true, title: true, type: true } }),
   ]);
+  const studentById = new Map(students.map((s) => [s.id, s]));
+  const taskById = new Map(taskRows.map((t) => [t.id, t]));
+  const items = rows.map((s) => ({
+    ...s,
+    student: studentById.get(s.studentId) ?? { name: "—", avatarColor: "#7C5CFF" },
+    task: taskById.get(s.taskId) ?? { title: "—", type: "TASK" },
+  }));
   const countOf = (s) => (s === "all" ? counts.reduce((a, c) => a + c._count._all, 0) : counts.find((c) => c.status === s)?._count._all ?? 0);
 
   return (

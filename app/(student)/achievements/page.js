@@ -1,5 +1,5 @@
 import { Lock } from "lucide-react";
-import { requireStudent } from "@/lib/auth";
+import { getSessionUserId, requireStudent } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { studentStats } from "@/lib/rewards";
 import { rankFor } from "@/lib/gamification";
@@ -22,11 +22,12 @@ const STAT_KEY = {
 };
 
 export default async function AchievementsPage() {
-  const user = await requireStudent();
-  const [all, owned, stats] = await Promise.all([
+  const userId = await getSessionUserId();
+  const [, all, owned, stats] = await Promise.all([
+    requireStudent(),
     prisma.achievement.findMany({ orderBy: [{ criteria: "asc" }, { threshold: "asc" }] }),
-    prisma.userAchievement.findMany({ where: { userId: user.id } }),
-    studentStats(user.id),
+    prisma.userAchievement.findMany({ where: { userId } }),
+    studentStats(userId),
   ]);
   const earned = new Map(owned.map((o) => [o.achievementId, o.earnedAt]));
   const rank = rankFor(stats.xp);

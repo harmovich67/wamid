@@ -373,7 +373,7 @@ export function AdminShell({ user, counts: initialCounts, children }) {
       </AnimatePresence>
 
       {/* Top Header */}
-      <header className="sticky top-0 z-20 border-b border-line bg-bg/85 backdrop-blur-xl lg:ms-64">
+      <header className="sticky top-0 z-20 border-b border-line bg-bg/95 sm:bg-bg/85 sm:backdrop-blur-xl lg:ms-64">
         <div className="flex h-15 items-center justify-between gap-3 px-4 sm:px-6">
           {/* Mobile view brand + current active page */}
           <div className="flex min-w-0 items-center gap-2.5 lg:hidden">
@@ -442,7 +442,7 @@ export function AdminShell({ user, counts: initialCounts, children }) {
       </main>
 
       {/* Mobile App Bottom Navigation Bar */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden shadow-[0_-4px_24px_rgba(0,0,0,0.06)]">
+      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] lg:hidden shadow-[0_-4px_24px_rgba(0,0,0,0.06)]">
         <div className="mx-auto flex max-w-lg items-stretch justify-around px-2 py-1">
           {MOBILE_MAIN_TABS.map((item) => {
             const active = isActive(pathname, item);

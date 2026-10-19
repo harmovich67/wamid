@@ -2,9 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { after } from "next/server";
 import { ArrowRight, Bot, Clock, Lock, Zap } from "lucide-react";
-import { requireStudent } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { getShellStats, getTasks, getTree } from "@/lib/student-data";
+import { getShellStats, getTasks, getTree, requireStudentWithData } from "@/lib/student-data";
 import { BlockRenderer } from "@/components/lesson/BlockRenderer";
 import { LessonQuiz } from "@/components/lesson/LessonQuiz";
 import { CompleteLesson } from "@/components/lesson/CompleteLesson";
@@ -25,7 +24,13 @@ export async function generateMetadata({ params }) {
 
 export default async function LessonPage({ params }) {
   const { id } = await params;
-  const user = await requireStudent();
+  // The lesson body loads alongside the access check; it is only used once access is confirmed.
+  const lessonQuery = Promise.all([
+    prisma.lesson.findUnique({ where: { id } }),
+    prisma.quizQuestion.findMany({ where: { lessonId: id }, orderBy: { order: "asc" } }),
+  ]);
+  lessonQuery.catch(() => {});
+  const user = await requireStudentWithData({ shell: true });
   const [tree, tasks, stats] = await Promise.all([getTree(user.id), getTasks(user.id), getShellStats(user)]);
   const entry = tree.lessonIndex.get(id);
   if (!entry) notFound();
@@ -55,10 +60,9 @@ export default async function LessonPage({ params }) {
     );
   }
 
-  const lesson = await prisma.lesson.findUnique({
-    where: { id },
-    include: { quiz: { orderBy: { order: "asc" } } },
-  });
+  const [lessonRow, quiz] = await lessonQuery;
+  if (!lessonRow) notFound();
+  const lesson = { ...lessonRow, quiz };
   const blocks = parseJSON(lesson.blocks, []);
   // Never send correct answers to the browser before grading.
   const questions = lesson.quiz.map((q) => ({ id: q.id, question: q.question, options: parseJSON(q.options, []) }));

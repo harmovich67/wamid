@@ -1,11 +1,9 @@
-import { requireStudent } from "@/lib/auth";
-import { announceUnlocks } from "@/lib/access";
-import { getShellStats } from "@/lib/student-data";
+import { requireStudentWithData, getShellStats } from "@/lib/student-data";
 import { StudentShell } from "@/components/layout/StudentShell";
 
 export default async function StudentLayout({ children }) {
-  const user = await requireStudent();
-  await announceUnlocks(user.id);
+  // New unlocks are announced by the bell's first poll (which runs right after load), so the page never waits for them.
+  const user = await requireStudentWithData({ shell: true });
   const stats = await getShellStats(user);
 
   return (

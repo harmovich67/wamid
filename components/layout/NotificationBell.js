@@ -12,7 +12,7 @@ import { api } from "@/lib/client";
 import { disablePush, enablePush, permission as pushPermission, serverPushActive, showLocalNotification, syncPush } from "@/lib/push-client";
 import { cn, timeAgo } from "@/lib/utils";
 
-const POLL_MS = 15000;
+const POLL_MS = 30000;
 
 /** Broadcasts fresh counters to the shells (chat badge etc.) without a full router refresh. */
 export function publishCounts(detail) {
@@ -30,7 +30,7 @@ export function publishPushState(state) {
 }
 
 /**
- * Live header bell: polls /api/notifications/feed every 15s (and on tab focus), shows a badge,
+ * Live header bell: polls /api/notifications/feed every 30s (and on tab focus), shows a badge,
  * a dropdown with the latest items, and — when something new arrives — a toast, a chime and a shake.
  * While the tab is in the background it raises a system notification instead (if allowed).
  */

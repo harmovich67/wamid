@@ -9,19 +9,19 @@ import { StudentsManager } from "@/components/admin/StudentsManager";
 export const metadata = { title: "الطلاب" };
 
 export default async function StudentsPage({ searchParams }) {
-  await requireAdmin();
-  const { new: openNew } = await searchParams;
-  const [students, completed, levels, tasks, groups] = await Promise.all([
-    prisma.user.findMany({
-      where: { role: "STUDENT" },
-      orderBy: { createdAt: "desc" },
-      include: { student: true, _count: { select: { accessRules: true } } },
-    }),
+  const [, { new: openNew }] = await Promise.all([requireAdmin(), searchParams]);
+  const [users, profiles, ruleCounts, completed, levels, tasks, groups] = await Promise.all([
+    prisma.user.findMany({ where: { role: "STUDENT" }, orderBy: { createdAt: "desc" } }),
+    prisma.studentProfile.findMany(),
+    prisma.accessRule.groupBy({ by: ["userId"], _count: { _all: true } }),
     prisma.lessonProgress.groupBy({ by: ["userId"], where: { completedAt: { not: null } }, _count: { _all: true } }),
     getCurriculum(),
     getTaskOptions(),
     listGroups(),
   ]);
+  const profileById = new Map(profiles.map((p) => [p.userId, p]));
+  const rulesBy = new Map(ruleCounts.map((r) => [r.userId, r._count._all]));
+  const students = users.map((u) => ({ ...u, student: profileById.get(u.id) ?? null, _count: { accessRules: rulesBy.get(u.id) ?? 0 } }));
   const groupsOf = (id) => groups.filter((g) => g.memberIds.includes(id));
   const doneBy = new Map(completed.map((c) => [c.userId, c._count._all]));
 

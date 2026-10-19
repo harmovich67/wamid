@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowRight, Bot, CalendarClock, Clock, Lock, MessageSquareText, Paperclip, Zap } from "lucide-react";
-import { requireStudent } from "@/lib/auth";
-import { getShellStats, getTasks } from "@/lib/student-data";
+import { getShellStats, getTasks, requireStudentWithData } from "@/lib/student-data";
 import { Markdown } from "@/components/lesson/Markdown";
 import { CodeBlock } from "@/components/lesson/CodeBlock";
 import { Badge } from "@/components/ui/Badge";
@@ -15,7 +14,7 @@ import { formatBytes, formatDate, formatDateTime, formatNumber, parseJSON } from
 
 export default async function TaskPage({ params }) {
   const { id } = await params;
-  const user = await requireStudent();
+  const user = await requireStudentWithData({ shell: true });
   const [tasks, stats] = await Promise.all([getTasks(user.id), getShellStats(user)]);
   const task = tasks.find((t) => t.id === id);
   if (!task) notFound();

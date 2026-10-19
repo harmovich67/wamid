@@ -1,11 +1,11 @@
 import { prisma } from "@/lib/db";
-import { forbidden, handler } from "@/lib/api";
-import { getLessonAccess } from "@/lib/access";
+import { notFound, handler } from "@/lib/api";
 
 // Polled by the open lesson page so the student sees teacher edits without a manual refresh.
-export const GET = handler({ role: "STUDENT" }, async ({ user, params }) => {
-  const { entry } = await getLessonAccess(user.id, params.id);
-  if (!entry?.lesson.access.open) throw forbidden("هذا الدرس غير متاح لك");
-  const lesson = await prisma.lesson.findUnique({ where: { id: params.id }, select: { updatedAt: true } });
+// Only a timestamp leaves here (the lesson body itself is still gated by the page), so this stays a
+// single indexed lookup instead of rebuilding the student's whole roadmap on every poll.
+export const GET = handler({ role: "STUDENT" }, async ({ params }) => {
+  const lesson = await prisma.lesson.findFirst({ where: { id: params.id, isPublished: true }, select: { updatedAt: true } });
+  if (!lesson) throw notFound();
   return { updatedAt: lesson.updatedAt.toISOString() };
 });

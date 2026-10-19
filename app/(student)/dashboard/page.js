@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, BookOpenCheck, CalendarClock, Flame, FlaskConical, ListChecks, Medal, Play, Sparkles, Swords, Trophy, Zap } from "lucide-react";
-import { requireStudent } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { getShellStats, getTasks, getTree, isPending } from "@/lib/student-data";
+import { getShellStats, getTasks, getTree, isPending, requireStudentWithData } from "@/lib/student-data";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { ProgressBar, ProgressRing } from "@/components/ui/Progress";
@@ -28,13 +27,13 @@ function greeting() {
 }
 
 export default async function DashboardPage() {
-  const user = await requireStudent();
-  const [tree, tasks, stats, lessonsDone, approved, badges, recent, submissionsTotal, aiConversationsCount] = await Promise.all([
+  const user = await requireStudentWithData({ shell: true });
+  const [tree, tasks, stats, lessonsDone, submissionCounts, badges, recent, aiConversationsCount] = await Promise.all([
     getTree(user.id),
     getTasks(user.id),
     getShellStats(user),
     prisma.lessonProgress.count({ where: { userId: user.id, completedAt: { not: null } } }),
-    prisma.submission.count({ where: { studentId: user.id, status: "APPROVED" } }),
+    prisma.submission.groupBy({ by: ["status"], where: { studentId: user.id }, _count: { _all: true } }),
     prisma.userAchievement.findMany({
       where: { userId: user.id },
       include: { achievement: true },
@@ -44,9 +43,10 @@ export default async function DashboardPage() {
       where: { userId: user.id, completedAt: { gte: daysAgo(7) } },
       select: { completedAt: true },
     }),
-    prisma.submission.count({ where: { studentId: user.id } }),
     prisma.aIConversation.count({ where: { userId: user.id } }),
   ]);
+  const approved = submissionCounts.find((c) => c.status === "APPROVED")?._count._all ?? 0;
+  const submissionsTotal = submissionCounts.reduce((sum, c) => sum + c._count._all, 0);
   const activeDays = new Set(recent.map((p) => dayKey(p.completedAt)));
   if (user.student?.lastActiveDate) activeDays.add(user.student.lastActiveDate);
   const week = Array.from({ length: 7 }, (_, i) => {

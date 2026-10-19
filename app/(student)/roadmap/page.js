@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { CheckCircle2, Clock, Lock } from "lucide-react";
-import { requireStudent } from "@/lib/auth";
-import { getTree } from "@/lib/student-data";
+import { getTree, requireStudentWithData } from "@/lib/student-data";
 import { PageHeader } from "@/components/ui/Card";
 import { Icon } from "@/components/ui/Icon";
 import { Badge } from "@/components/ui/Badge";
@@ -13,7 +12,7 @@ import { cn, formatDate, formatNumber, percent } from "@/lib/utils";
 export const metadata = { title: "مسار التعلّم" };
 
 export default async function RoadmapPage() {
-  const user = await requireStudent();
+  const user = await requireStudentWithData({ tasks: false });
   const { levels } = await getTree(user.id);
 
   return (

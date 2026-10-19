@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { Bell } from "lucide-react";
 import { NotificationIcon } from "@/components/shared/NotificationIcon";
-import { requireStudent } from "@/lib/auth";
+import { after } from "next/server";
+import { getSessionUserId, requireStudent } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { PageHeader } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -11,14 +12,12 @@ export const metadata = { title: "الإشعارات" };
 
 
 export default async function NotificationsPage() {
-  const user = await requireStudent();
-  const items = await prisma.notification.findMany({
-    where: { userId: user.id },
-    orderBy: { createdAt: "desc" },
-    take: 100,
-  });
-  // Opening the page marks everything as read (the list above still shows what was new).
-  await prisma.notification.updateMany({ where: { userId: user.id, readAt: null }, data: { readAt: new Date() } });
+  const [user, items] = await Promise.all([
+    requireStudent(),
+    getSessionUserId().then((userId) => prisma.notification.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, take: 100 })),
+  ]);
+  // Opening the page marks everything as read (the list above still shows what was new); the student doesn't wait for it.
+  after(() => prisma.notification.updateMany({ where: { userId: user.id, readAt: null }, data: { readAt: new Date() } }).catch(() => {}));
 
   return (
     <div className="mx-auto max-w-2xl">

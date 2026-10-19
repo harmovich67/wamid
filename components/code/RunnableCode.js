@@ -1,9 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { PencilLine, Play } from "lucide-react";
-import { CodePlayground } from "./CodePlayground";
 import { RunPanel } from "./RunPanel";
+
+// The editor (and its syntax highlighter) is only needed once the student presses "edit", so it stays out of the lesson bundle.
+const loadPlayground = () => import("./CodePlayground").then((m) => m.CodePlayground);
+const CodePlayground = dynamic(loadPlayground, {
+  ssr: false,
+  loading: () => <div className="skeleton h-40 rounded-2xl" />,
+});
 
 /**
  * Wraps a lesson's read-only code block (`children`) with "run" and "edit & try" actions.
@@ -33,6 +40,7 @@ export function RunnableCode({ code, language, title, children }) {
         <button
           type="button"
           onClick={() => setMode("edit")}
+          onPointerEnter={loadPlayground}
           className="flex h-9 items-center gap-1.5 rounded-xl bg-primary-soft px-3 text-sm font-semibold text-primary transition hover:brightness-95"
         >
           <PencilLine className="size-4" /> عدّل وجرّب بنفسك

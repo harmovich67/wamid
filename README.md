@@ -79,3 +79,18 @@ storage/         uploaded files (git-ignored, served only through /api/files/:id
 SQLite and local file storage need a single server with a persistent disk (a VPS, Railway, Fly.io
 with a volume, and so on). Set `AUTH_SECRET`, run `npm run build && npx prisma db push && npm start`, and put
 it behind HTTPS so the session cookie is sent `Secure`.
+
+## Performance notes
+
+Every page is rendered on demand, so the time to open one is mostly **database round trips**. With a remote
+database (TiDB/MySQL on Vercel) each round trip costs the network latency between the function and the database.
+
+- **Keep the app and the database in the same region.** On Vercel set the function region next to the database
+  (Project → Settings → Functions → Region, or `"regions": ["<id>"]` in `vercel.json`). This is the single biggest lever.
+- **Keep queries flat and parallel.** Avoid long `include` chains (Prisma runs each level as a separate query) and
+  start independent queries together with `Promise.all`. `requireStudentWithData()` starts the roadmap/tasks loads
+  while the user row is still being checked.
+- **The published curriculum is cached** (`loadCurriculum` in `lib/access.js`, tag `curriculum`). Any successful
+  teacher write through `handler({ role: "ADMIN" })` clears it, so new routes that change the curriculum need no extra work
+  as long as they use `handler`.
+- **Counting queries:** start the server with `PRISMA_QUERY_LOG=1` to print every SQL statement.

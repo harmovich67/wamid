@@ -12,15 +12,24 @@ import { formatDate, formatNumber } from "@/lib/utils";
 export const metadata = { title: "المهام" };
 
 export default async function AdminTasksPage() {
-  await requireAdmin();
-  const tasks = await prisma.task.findMany({
-    orderBy: { createdAt: "desc" },
-    include: {
-      course: { select: { title: true } },
-      lesson: { select: { title: true } },
-      submissions: { select: { status: true } },
-    },
-  });
+  // Flat parallel queries (labels and per-task counts are stitched together) instead of a chain of includes.
+  const [, rows, courses, lessons, counts] = await Promise.all([
+    requireAdmin(),
+    prisma.task.findMany({ orderBy: { createdAt: "desc" } }),
+    prisma.course.findMany({ select: { id: true, title: true } }),
+    prisma.lesson.findMany({ select: { id: true, title: true } }),
+    prisma.submission.groupBy({ by: ["taskId", "status"], _count: { _all: true } }),
+  ]);
+  const courseTitle = new Map(courses.map((c) => [c.id, c.title]));
+  const lessonTitle = new Map(lessons.map((l) => [l.id, l.title]));
+  const countOf = (taskId, status) => counts.find((c) => c.taskId === taskId && c.status === status)?._count._all ?? 0;
+  const tasks = rows.map((t) => ({
+    ...t,
+    course: t.courseId ? { title: courseTitle.get(t.courseId) } : null,
+    lesson: t.lessonId ? { title: lessonTitle.get(t.lessonId) } : null,
+    pending: countOf(t.id, "SUBMITTED"),
+    approved: countOf(t.id, "APPROVED"),
+  }));
 
   return (
     <div>
@@ -38,8 +47,7 @@ export default async function AdminTasksPage() {
       ) : (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {tasks.map((t) => {
-            const pending = t.submissions.filter((s) => s.status === "SUBMITTED").length;
-            const approved = t.submissions.filter((s) => s.status === "APPROVED").length;
+            const { pending, approved } = t;
             return (
               <Link key={t.id} href={`/admin/tasks/${t.id}`} className="flex flex-col rounded-3xl border border-line bg-surface p-5 shadow-card transition hover:-translate-y-0.5 hover:border-primary/40">
                 <div className="flex flex-wrap gap-1.5">

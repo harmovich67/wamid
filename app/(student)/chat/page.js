@@ -1,5 +1,5 @@
 import { MessagesSquare } from "lucide-react";
-import { requireStudent } from "@/lib/auth";
+import { getSessionUserId, requireStudent } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getThread } from "@/lib/chat";
 import { LIMITS } from "@/lib/uploads";
@@ -10,11 +10,11 @@ import { StudentChat } from "@/components/chat/StudentChat";
 export const metadata = { title: "مراسلة المعلّم" };
 
 export default async function ChatPage() {
-  const user = await requireStudent();
-  const enabled = Boolean(user.student?.chatEnabled);
   // Rendering never marks messages as read (this page is prefetched) — the client does it on view.
-  const [thread, teacher] = await Promise.all([
-    getThread(user.id, "STUDENT"),
+  // The thread is loaded alongside the account check (the session cookie already identifies the student).
+  const [user, thread, teacher] = await Promise.all([
+    requireStudent(),
+    getSessionUserId().then((id) => getThread(id, "STUDENT")),
     prisma.user.findFirst({
       where: { role: "ADMIN", isActive: true },
       orderBy: { createdAt: "asc" },
@@ -22,6 +22,7 @@ export default async function ChatPage() {
     }),
   ]);
 
+  const enabled = Boolean(user.student?.chatEnabled);
   if (!enabled && thread.messages.length === 0) {
     return (
       <div className="mx-auto max-w-2xl">

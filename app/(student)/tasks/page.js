@@ -1,6 +1,5 @@
 import { CalendarClock, CheckCircle2, Hourglass, ListChecks, PenLine, RotateCcw } from "lucide-react";
-import { requireStudent } from "@/lib/auth";
-import { getTasks } from "@/lib/student-data";
+import { getTasks, requireStudentWithData } from "@/lib/student-data";
 import { PageHeader } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { FadeIn } from "@/components/ui/Motion";
@@ -27,7 +26,7 @@ function groupOf(task) {
 }
 
 export default async function TasksPage() {
-  const user = await requireStudent();
+  const user = await requireStudentWithData();
   const tasks = await getTasks(user.id);
   const grouped = Object.groupBy(tasks, groupOf);
 

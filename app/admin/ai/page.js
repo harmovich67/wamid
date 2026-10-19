@@ -9,7 +9,7 @@ export const metadata = { title: "المساعد الذكي" };
 
 export default async function AdminAIPage() {
   await requireAdmin();
-  const settings = await getAISettings();
+  const settings = await getAISettings({ fresh: true });
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const weekAgo = daysAgo(7);

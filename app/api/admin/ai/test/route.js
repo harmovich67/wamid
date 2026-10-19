@@ -3,7 +3,7 @@ import { answerText, createClient, generationConfig, getAISettings } from "@/lib
 
 // Sends a tiny prompt with the saved settings so the teacher can verify the key and model id.
 export const POST = handler({ role: "ADMIN" }, async () => {
-  const settings = await getAISettings();
+  const settings = await getAISettings({ fresh: true });
   const client = createClient(settings);
   if (!client) throw new ApiError(400, "لا يوجد مفتاح API. أضفه هنا أو في متغير البيئة GEMINI_API_KEY");
   const started = Date.now();

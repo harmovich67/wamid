@@ -96,7 +96,7 @@ export function StudentShell({ user, stats: initialStats, children }) {
       </aside>
 
       {/* Top bar */}
-      <header className="sticky top-0 z-20 border-b border-line bg-bg/85 backdrop-blur-xl lg:ms-64">
+      <header className="sticky top-0 z-20 border-b border-line bg-bg/95 sm:bg-bg/85 sm:backdrop-blur-xl lg:ms-64">
         <div className="mx-auto flex h-14 sm:h-16 max-w-6xl items-center justify-between gap-1.5 px-3.5 sm:px-6">
           <Link href="/dashboard" className="shrink-0 lg:hidden">
             <Logo size={28} subtitle={false} />
@@ -146,7 +146,7 @@ export function StudentShell({ user, stats: initialStats, children }) {
       </main>
 
       {/* Mobile bottom navigation */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden shadow-[0_-4px_24px_rgba(0,0,0,0.06)]">
+      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] lg:hidden shadow-[0_-4px_24px_rgba(0,0,0,0.06)]">
         <div className="mx-auto flex max-w-lg items-stretch justify-around px-1 py-1">
           {nav.filter((item) => !item.desktopOnly).map((item) => {
             const active = isActive(pathname, item);

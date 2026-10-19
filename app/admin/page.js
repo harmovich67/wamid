@@ -4,6 +4,7 @@ import {
 } from "lucide-react";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { loadCurriculum } from "@/lib/access";
 import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
@@ -64,40 +65,53 @@ export default async function AdminHome() {
   const weekAgo = daysAgo(7);
   const twoWeeksAgo = daysAgo(14);
 
-  const [students, progress, pendingSubs, pendingCount, aiThisWeek, aiLastWeek, courses, top] = await Promise.all([
+  // Flat parallel queries (names, titles and profiles are stitched together here) so the page waits for one
+  // round trip instead of a chain of includes.
+  const [users, profiles, ruleCounts, progressRows, pendingRows, pendingCount, aiThisWeek, aiLastWeek, curriculum, completionRows, tasks, topProfiles] = await Promise.all([
     prisma.user.findMany({
-      where: { role: "STUDENT", isActive: true },
-      select: { id: true, name: true, avatarColor: true, lastLoginAt: true, createdAt: true, student: true, _count: { select: { accessRules: true } } },
+      where: { role: "STUDENT" },
+      select: { id: true, name: true, avatarColor: true, lastLoginAt: true, createdAt: true, isActive: true },
     }),
+    prisma.studentProfile.findMany(),
+    prisma.accessRule.groupBy({ by: ["userId"], _count: { _all: true } }),
     prisma.lessonProgress.findMany({
       where: { completedAt: { gte: twoWeeksAgo } },
-      select: { userId: true, completedAt: true, lesson: { select: { title: true } }, user: { select: { name: true, avatarColor: true } } },
+      select: { userId: true, lessonId: true, completedAt: true },
       orderBy: { completedAt: "desc" },
     }),
-    prisma.submission.findMany({
-      where: { status: "SUBMITTED" },
-      orderBy: { submittedAt: "asc" },
-      take: 5,
-      include: { student: { select: { name: true, avatarColor: true } }, task: { select: { title: true, type: true } } },
-    }),
+    prisma.submission.findMany({ where: { status: "SUBMITTED" }, orderBy: { submittedAt: "asc" }, take: 5 }),
     prisma.submission.count({ where: { status: "SUBMITTED" } }),
     prisma.aIMessage.count({ where: { role: "user", createdAt: { gte: weekAgo } } }),
     prisma.aIMessage.count({ where: { role: "user", createdAt: { gte: twoWeeksAgo, lt: weekAgo } } }),
-    prisma.course.findMany({
-      where: { isPublished: true },
-      orderBy: [{ level: { order: "asc" } }, { order: "asc" }],
-      select: {
-        id: true, title: true, icon: true, color: true,
-        modules: { select: { lessons: { where: { isPublished: true }, select: { id: true, _count: { select: { progress: { where: { completedAt: { not: null } } } } } } } } },
-      },
-    }),
-    prisma.studentProfile.findMany({
-      orderBy: { xp: "desc" },
-      take: 5,
-      where: { user: { isActive: true } },
-      include: { user: { select: { id: true, name: true, avatarColor: true } } },
-    }),
+    loadCurriculum(),
+    prisma.lessonProgress.groupBy({ by: ["lessonId"], where: { completedAt: { not: null } }, _count: { _all: true } }),
+    prisma.task.findMany({ select: { id: true, title: true, type: true } }),
+    prisma.studentProfile.findMany({ orderBy: { xp: "desc" }, take: 5, where: { user: { isActive: true } } }),
   ]);
+
+  const userById = new Map(users.map((u) => [u.id, u]));
+  const profileById = new Map(profiles.map((p) => [p.userId, p]));
+  const rulesBy = new Map(ruleCounts.map((r) => [r.userId, r._count._all]));
+  const taskById = new Map(tasks.map((t) => [t.id, t]));
+  const lessonTitle = new Map(curriculum.flatMap((l) => l.courses).flatMap((c) => c.modules).flatMap((m) => m.lessons).map((l) => [l.id, l.title]));
+  const students = users
+    .filter((u) => u.isActive)
+    .map((u) => ({ ...u, student: profileById.get(u.id) ?? null, _count: { accessRules: rulesBy.get(u.id) ?? 0 } }));
+  const progress = progressRows.map((p) => ({ ...p, lesson: { title: lessonTitle.get(p.lessonId) ?? "درس" }, user: userById.get(p.userId) ?? { name: "—", avatarColor: "#7C5CFF" } }));
+  const pendingSubs = pendingRows.map((s) => ({
+    ...s,
+    student: userById.get(s.studentId) ?? { name: "—", avatarColor: "#7C5CFF" },
+    task: taskById.get(s.taskId) ?? { title: "—", type: "TASK" },
+  }));
+  const top = topProfiles.map((p) => ({ ...p, user: userById.get(p.userId) ?? { id: p.userId, name: "—", avatarColor: "#7C5CFF" } }));
+  const completionsBy = new Map(completionRows.map((r) => [r.lessonId, r._count._all]));
+  const courses = curriculum.flatMap((l) => l.courses).map((c) => ({
+    id: c.id,
+    title: c.title,
+    icon: c.icon,
+    color: c.color,
+    lessons: c.modules.flatMap((m) => m.lessons.map((l) => ({ id: l.id, _count: { progress: completionsBy.get(l.id) ?? 0 } }))),
+  }));
 
   // Weekly comparisons.
   const thisWeek = progress.filter((p) => p.completedAt >= weekAgo);
@@ -119,9 +133,8 @@ export default async function AdminHome() {
   // Course engagement: completions / (lessons × active students).
   const courseRows = courses
     .map((c) => {
-      const lessons = c.modules.flatMap((m) => m.lessons);
-      const completions = lessons.reduce((s, l) => s + l._count.progress, 0);
-      return { ...c, lessons: lessons.length, completions };
+      const completions = c.lessons.reduce((s, l) => s + l._count.progress, 0);
+      return { ...c, lessons: c.lessons.length, completions };
     })
     .filter((c) => c.lessons > 0)
     .sort((a, b) => b.completions - a.completions)
