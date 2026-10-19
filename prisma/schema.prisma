@@ -477,6 +477,7 @@ model Upload {
   name      String
   mime      String
   size      Int
-  path      String
+  path      String?
+  data      Bytes?   @db.LongBlob
   createdAt DateTime @default(now())
 }

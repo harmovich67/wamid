@@ -1,5 +1,5 @@
 import { createReadStream } from "node:fs";
-import { stat } from "node:fs/promises";
+import { stat, readFile } from "node:fs/promises";
 import path from "node:path";
 import { Readable } from "node:stream";
 import { prisma } from "@/lib/db";
@@ -17,15 +17,6 @@ export const GET = handler({}, async ({ req, user, params }) => {
   // Teachers see everything. Students see teacher content and their own uploads only.
   if (user.role !== "ADMIN" && upload.owner.role !== "ADMIN" && upload.ownerId !== user.id) throw forbidden();
 
-  const abs = path.join(STORAGE_ROOT, upload.path);
-  if (!abs.startsWith(STORAGE_ROOT)) throw forbidden();
-  let info;
-  try {
-    info = await stat(abs);
-  } catch {
-    throw notFound("الملف غير موجود");
-  }
-
   const inline = INLINE.test(upload.mime);
   const headers = {
     "Content-Type": inline ? upload.mime : "application/octet-stream",
@@ -35,18 +26,53 @@ export const GET = handler({}, async ({ req, user, params }) => {
     "Accept-Ranges": "bytes",
   };
 
-  // Range support so uploaded videos can seek.
-  const range = req.headers.get("range")?.match(/bytes=(\d*)-(\d*)/);
-  if (range) {
-    const start = range[1] ? Number(range[1]) : 0;
-    const end = range[2] ? Math.min(Number(range[2]), info.size - 1) : info.size - 1;
-    if (start >= info.size || start > end) {
-      return new Response(null, { status: 416, headers: { "Content-Range": `bytes */${info.size}` } });
+  // If stored in database (e.g. on serverless environments like Vercel)
+  if (upload.data) {
+    const fileBuffer = Buffer.isBuffer(upload.data) ? upload.data : Buffer.from(upload.data);
+    const size = fileBuffer.length;
+
+    const range = req.headers.get("range")?.match(/bytes=(\d*)-(\d*)/);
+    if (range) {
+      const start = range[1] ? Number(range[1]) : 0;
+      const end = range[2] ? Math.min(Number(range[2]), size - 1) : size - 1;
+      if (start >= size || start > end) {
+        return new Response(null, { status: 416, headers: { "Content-Range": `bytes */${size}` } });
+      }
+      const chunk = fileBuffer.subarray(start, end + 1);
+      return new Response(chunk, {
+        status: 206,
+        headers: { ...headers, "Content-Range": `bytes ${start}-${end}/${size}`, "Content-Length": String(chunk.length) },
+      });
     }
-    return new Response(Readable.toWeb(createReadStream(abs, { start, end })), {
-      status: 206,
-      headers: { ...headers, "Content-Range": `bytes ${start}-${end}/${info.size}`, "Content-Length": String(end - start + 1) },
-    });
+
+    return new Response(fileBuffer, { headers: { ...headers, "Content-Length": String(size) } });
   }
-  return new Response(Readable.toWeb(createReadStream(abs)), { headers: { ...headers, "Content-Length": String(info.size) } });
+
+  // Fallback to disk storage
+  if (upload.path) {
+    const abs = path.join(STORAGE_ROOT, upload.path);
+    if (!abs.startsWith(STORAGE_ROOT)) throw forbidden();
+    let info;
+    try {
+      info = await stat(abs);
+    } catch {
+      throw notFound("الملف غير موجود");
+    }
+
+    const range = req.headers.get("range")?.match(/bytes=(\d*)-(\d*)/);
+    if (range) {
+      const start = range[1] ? Number(range[1]) : 0;
+      const end = range[2] ? Math.min(Number(range[2]), info.size - 1) : info.size - 1;
+      if (start >= info.size || start > end) {
+        return new Response(null, { status: 416, headers: { "Content-Range": `bytes */${info.size}` } });
+      }
+      return new Response(Readable.toWeb(createReadStream(abs, { start, end })), {
+        status: 206,
+        headers: { ...headers, "Content-Range": `bytes ${start}-${end}/${info.size}`, "Content-Length": String(end - start + 1) },
+      });
+    }
+    return new Response(Readable.toWeb(createReadStream(abs)), { headers: { ...headers, "Content-Length": String(info.size) } });
+  }
+
+  throw notFound("الملف غير موجود");
 });
